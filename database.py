@@ -22,7 +22,7 @@ def init_db():
                    )
                    ''')
 
-    # 2. Создаем таблицу для СЕБЫТИЙ (сюда парсеры будут складывать афишу)
+    # 2. Создаем таблицу для СoБЫТИЙ (сюда парсеры будут складывать афишу)
     cursor.execute('''
                    CREATE TABLE IF NOT EXISTS events (
                                                          id INTEGER PRIMARY KEY AUTOINCREMENT,
