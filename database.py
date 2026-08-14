@@ -72,7 +72,7 @@ def add_initial_sources():
     sources = [
         ("GoKaliningrad", "https://gokaliningrad.com", "Общественное мероприятие"),
         ("Клопс Афиша", "https://klops.ru", "Концерты и праздники"),
-        ("Афиша Калининград", "https://afisha.ru", "Концерты"),
+        ("Афиша Калининград", "https://afisha.ru/kaliningrad/", "Концерты"),
         ("Афиша 80 лет области", "https://visit-kaliningrad.ru", "Общественные мероприятия"),
         ("Казино Собрание", "https://sobranie-casino.com", "Дискотеки и праздники"),
         ("Казино Шамбала", "https://shambala-games.com", "Дискотеки и праздники"),

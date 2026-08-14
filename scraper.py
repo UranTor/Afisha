@@ -299,7 +299,7 @@ def parse_casino_shambala():
 
 def parse_afisha_kaliningrad():
     """ 7. Парсер Афиши Калининград (afisha.ru) """
-    url = "https://www.afisha.ru/kaliningrad/"
+    url = "https://afisha.ru/kaliningrad/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
@@ -323,13 +323,13 @@ def parse_afisha_kaliningrad():
                         continue
 
                     clean_title = " ".join(title.split())
-                    full_url = href if href.startswith('http') else "https://www.afisha.ru" + href
+                    full_url = href if href.startswith('http') else "https://afisha.ru/kaliningrad/" + href
 
                     collected_events.append({
                         "title": clean_title,
                         "date_info": "Уточняйте на Afisha.ru",
                         "category": "Концерты",
-                        "source": "https://afisha.ru"
+                        "source": url
                     })
     except Exception as e:
         print(f"Ошибка Афиши Калининград: {e}")
