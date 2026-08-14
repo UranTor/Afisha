@@ -130,60 +130,39 @@ def parse_casino_sobranie():
 
 
 def parse_klops_afisha():
-    """
-    Максимально открытый парсер Клопс Афиши.
-    Собирает любые текстовые ссылки со страницы афиши.
-    """
+    """ 5. Парсер Клопс Афиши """
     url = "https://klops.ru/afisha"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     collected_events = []
-    print("Парсер Клопс Афиши запущен...")
 
+    print("Парсер Клопс Афиши запущен...")
     try:
         response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            print(f"Ошибка загрузки Клопс: {response.status_code}")
-            return collected_events
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+            # Поиск всех ссылок на странице
+            for link in soup.find_all('a', href=True):
+                title = link.text.strip()
+                href = link['href']
 
-        # Берем вообще все ссылки на странице
-        for link in soup.find_all('a', href=True):
-            title = link.text.strip()
-            href = link['href']
+                # Отбор ссылок, содержащих маркеры мероприятий и длиннее 15 символов
+                if title and len(title) > 15:
+                    # Исключение элементов навигации портала Клопс
+                    if any(word in title.lower() for word in ["купить билет", "все концерты", "политика", "новости", "вход"]):
+                        continue
 
-            # Отбираем только те ссылки, текст которых длиннее 15 символов
-            # (это гарантирует, что мы берем названия событий, а не пункты меню "Вход", "Новости")
-            if title and len(title) > 15:
-                # Исключаем служебные фразы
-                if any(word in title.lower() for word in ["купить билет", "все концерты", "политика", "контакты"]):
-                    continue
+                    clean_title = " ".join(title.split())
+                    full_url = href if href.startswith('http') else "https://klops.ru" + href
 
-                clean_title = " ".join(title.split())
-                full_url = href if href.startswith('http') else "https://klops.ru" + href
-
-                collected_events.append({
-                    "title": clean_title,
-                    "date_info": "Уточняйте на Klops.ru",
-                    "category": "Концерты и праздники",
-                    "source": full_url
-                })
-
-        # Удаляем дубликаты
-        unique_events = []
-        titles_seen = set()
-        for ev in collected_events:
-            if ev["title"] not in titles_seen:
-                titles_seen.add(ev["title"])
-                unique_events.append(ev)
-
-        return unique_events
-
+                    collected_events.append({
+                        "title": clean_title,
+                        "date_info": "Уточняйте на Klops.ru",
+                        "category": "Концерты и праздники",
+                        "source": "https://klops.ru/afisha"
+                    })
     except Exception as e:
-        print(f"Ошибка при парсинге Клопс Афиши: {e}")
+        print(f"Ошибка Клопс Афиши: {e}")
     return collected_events
 
 
