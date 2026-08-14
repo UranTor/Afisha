@@ -336,6 +336,43 @@ def parse_afisha_kaliningrad():
     return collected_events
 
 
+def parse_yandex_kaliningrad():
+    """ 8. Парсер Яндекс Калининград (afisha.yandex.ru) """
+    url = "https://afisha.yandex.ru/kaliningrad"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    collected_events = []
+
+    print("Парсер Яндекс Калининград запущен...")
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Сбор текстовых ссылок на мероприятия
+            for link in soup.find_all('a', href=True):
+                title = link.text.strip()
+                href = link['href']
+
+                if title and len(title) > 12:
+                    # Исключение служебных элементов интерфейса Яндекса
+                    if any(word in title.lower() for word in ["купить", "билеты", "выбрать", "акции", "вход", "кабинет"]):
+                        continue
+
+                    clean_title = " ".join(title.split())
+                    full_url = href if href.startswith('http') else "https://afisha.yandex.ru" + href
+
+                    collected_events.append({
+                        "title": clean_title,
+                        "date_info": "Уточняйте на Яндекс Афише",
+                        "category": "Концерты",
+                        "source": url
+                    })
+    except Exception as e:
+        print(f"Ошибка Яндекс Калининград: {e}")
+    return collected_events
+
 
 def save_events_to_db(events_list):
     """
@@ -441,8 +478,10 @@ def run_all_parsers():
         # Умная развилка: анализируем адрес сайта и вызываем нужную функцию
         if "gokaliningrad.com" in url:
             results = parse_gokaliningrad()
-        elif "afisha.ru" in url:  # <- ПОДКЛЮЧЕНИЕ НОВОГО ПАРСЕРА
+        elif "afisha.ru" in url:  # <- ПОДКЛЮЧЕНИЕ НОВОГО ПАРСЕРА АФИША КЛД
             results = parse_afisha_kaliningrad()
+        elif "yandex.ru" in url:  # <- ПОДКЛЮЧЕНИЕ НОВОГО ПАРСЕРА ЯНДЕКСА
+            results = parse_yandex_kaliningrad()
         elif "sobranie-casino.com" in url:
             results = parse_casino_sobranie()
         elif "shambala-games.com" in url:

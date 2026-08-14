@@ -76,8 +76,10 @@ def add_initial_sources():
         ("Афиша 80 лет области", "https://visit-kaliningrad.ru", "Общественные мероприятия"),
         ("Казино Собрание", "https://sobranie-casino.com", "Дискотеки и праздники"),
         ("Казино Шамбала", "https://shambala-games.com", "Дискотеки и праздники"),
-        ("Мотодвиж39 (VK)", "https://vk.com", "Мото тусовки")
+        ("Мотодвиж39 (VK)", "https://vk.com", "Мото тусовки"),
+        ("Яндекс Калининград", "https://afisha.yandex.ru/kaliningrad", "Концерты")  # <- ДОБАВЛЕН НОВЫЙ ИСТОЧНИК
     ]
+
 
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
