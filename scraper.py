@@ -297,6 +297,46 @@ def parse_casino_shambala():
     return collected_events
 
 
+def parse_afisha_kaliningrad():
+    """ 7. Парсер Афиши Калининград (afisha.ru) """
+    url = "https://www.afisha.ru/kaliningrad/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    collected_events = []
+
+    print("Парсер Афиши Калининград запущен...")
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Поиск всех ссылок на странице для извлечения названий
+            for link in soup.find_all('a', href=True):
+                title = link.text.strip()
+                href = link['href']
+
+                # Фильтрация по длине текста для отсечения коротких пунктов меню
+                if title and len(title) > 12:
+                    # Исключение служебных переходов
+                    if any(word in title.lower() for word in ["купить", "билеты", "выбрать", "акции", "скидки", "кабинет"]):
+                        continue
+
+                    clean_title = " ".join(title.split())
+                    full_url = href if href.startswith('http') else "https://www.afisha.ru" + href
+
+                    collected_events.append({
+                        "title": clean_title,
+                        "date_info": "Уточняйте на Afisha.ru",
+                        "category": "Концерты",
+                        "source": "https://afisha.ru"
+                    })
+    except Exception as e:
+        print(f"Ошибка Афиши Калининград: {e}")
+    return collected_events
+
+
+
 def save_events_to_db(events_list):
     """
     Функция записывает события в базу данных SQLite,
@@ -377,7 +417,6 @@ def save_events_to_db(events_list):
     print(f"Фильтрация завершена. В базу данных добавлено чистых событий: {saved_count}")
 
 
-
 def run_all_parsers():
     """
     Главный диспетчер. Он опрашивает базу данных, находит активные источники
@@ -402,17 +441,16 @@ def run_all_parsers():
         # Умная развилка: анализируем адрес сайта и вызываем нужную функцию
         if "gokaliningrad.com" in url:
             results = parse_gokaliningrad()
+        elif "afisha.ru" in url:  # <- ПОДКЛЮЧЕНИЕ НОВОГО ПАРСЕРА
+            results = parse_afisha_kaliningrad()
         elif "sobranie-casino.com" in url:
             results = parse_casino_sobranie()
-        elif "afisha80let" in url or "visit-kaliningrad.ru" in url:
-            results = parse_afisha_80let()
+        elif "shambala-games.com" in url:
+            results = parse_casino_shambala()
         elif "klops.ru" in url:
             results = parse_klops_afisha()
-        elif "shambala" in url:
-            results = parse_casino_shambala()
-
-
-
+        elif "visit-kaliningrad.ru" in url:
+            results = parse_afisha_80let()
         else:
             print(f"⚠️ Для сайта {name} еще не написан точный парсер. Запускаем базовый сбор.")
             # Сюда в будущем можно поставить универсальный парсер
@@ -421,9 +459,6 @@ def run_all_parsers():
         print(f"-> Собрано событий: {len(results)}")
         if results:
             save_events_to_db(results)
-
-
-
 
 
 

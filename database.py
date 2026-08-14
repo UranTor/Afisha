@@ -1,6 +1,15 @@
 import sqlite3
 
-DB_NAME = "afisha_database.db"
+import os
+import sqlite3
+
+# Автоматически находим точную папку, где лежит этот файл проекта
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Склеиваем путь, чтобы база всегда лежала строго в корне проекта
+DB_NAME = os.path.join(BASE_DIR, "afisha_database.db")
+
+print(f"Физический путь к базе данных: {DB_NAME}")
+
 
 def init_db():
     """
@@ -35,6 +44,21 @@ def init_db():
                        )
                    ''')
 
+    # 2. Создаем таблицу для СОБЫТИЙ
+    cursor.execute('''
+                   CREATE TABLE IF NOT EXISTS events (
+                                                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                         title TEXT NOT NULL,
+                                                         date_info TEXT,
+                                                         category TEXT,
+                                                         source_url TEXT,
+                                                         iso_date TEXT, -- <- ДОБАВЛЯЕМ ЭТО ПОЛЕ ДЛЯ СОРТИРОВКИ ПО КАЛЕНДАРЮ
+                                                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                         UNIQUE(title, date_info)
+                       )
+                   ''')
+
+
     # Сохраняем изменения и закрываем соединение
     conn.commit()
     conn.close()
@@ -48,7 +72,7 @@ def add_initial_sources():
     sources = [
         ("GoKaliningrad", "https://gokaliningrad.com", "Общественное мероприятие"),
         ("Клопс Афиша", "https://klops.ru", "Концерты и праздники"),
-        ("Яндекс Афиша Калининград", "https://afisha.ru", "Концерты"),
+        ("Афиша Калининград", "https://afisha.ru", "Концерты"),
         ("Афиша 80 лет области", "https://visit-kaliningrad.ru", "Общественные мероприятия"),
         ("Казино Собрание", "https://sobranie-casino.com", "Дискотеки и праздники"),
         ("Казино Шамбала", "https://shambala-games.com", "Дискотеки и праздники"),
@@ -72,8 +96,11 @@ def add_initial_sources():
     conn.close()
     print("Стартовые источники успешно загружены в базу данных!")
 
+# Этот блок должен запускать СОЗДАНИЕ базы данных, а не её очистку!
 if __name__ == "__main__":
-    import sqlite3
+    init_db()               # 1. Создает таблицы sources и events с новой колонкой iso_date
+    add_initial_sources()   # 2. Загружает в базу наши 7 стартовых сайтов-источников
+
 
     # 1. Тот самый полный список мусорных фраз, переведенный в нижний регистр
     garbage_phrases = [
@@ -136,3 +163,4 @@ if __name__ == "__main__":
     conn.close()
 
     print(f"🧹 Успех! Python распознал русский текст и удалил {deleted_count} мусорных строк.")
+
