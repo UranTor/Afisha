@@ -8,61 +8,60 @@ DB_NAME = os.path.join(BASE_DIR, "afisha_database.db")
 
 
 def parse_gokaliningrad():
-    """
-    Это функция. Она объединяет наш старый код в одну готовую команду.
-    Вместо вывода на экран (print), она будет возвращать собранные данные.
-    """
-    url = "https://gokaliningrad.com"
+    """ 1. Оптимизированный парсер GoKaliningrad по трем разделам """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-
-    # Сюда мы будем складывать результаты в чистом виде
     collected_events = []
 
+    # Словарь целевых разделов с привязкой к точным категориям
+    sections = {
+        "https://gokaliningrad.com/tour/list": "Экскурсии",
+        "https://gokaliningrad.com/museum/list": "Выставки",
+        "https://gokaliningrad.com/museumgeo/list": "Музеи"
+    }
+
     print("Парсер GoKaliningrad запущен...")
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            print(f"Ошибка загрузки GoKaliningrad: {response.status_code}")
-            return collected_events
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        titles = soup.find_all('div', class_='v-card__title')
+    # Последовательный обход каждого раздела
+    for target_url, category_name in sections.items():
+        try:
+            response = requests.get(target_url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                print(f"Ошибка загрузки раздела {target_url}: {response.status_code}")
+                continue
 
-        for title_block in titles:
-            event_title = title_block.text.strip()
-            parent_card = title_block.find_parent()
+            soup = BeautifulSoup(response.text, 'html.parser')
+            titles = soup.find_all('div', class_='v-card__title')
 
-            date_text = "Дата не указана"
-            if parent_card:
-                text_block = parent_card.find('div', class_='v-card__text')
-                if text_block:
-                    # Исправление: get_text разделяет слипшиеся слова красивой чертой
-                    date_text = text_block.get_text(separator=" | ", strip=True)
+            for title_block in titles:
+                event_title = title_block.text.strip()
+                parent_card = title_block.find_parent()
 
-            # Вместо print мы создаем "пакет данных" (словарь) для каждого события
-            event_data = {
-                "title": event_title,
-                "date_info": date_text,
-                "category": "Общественное мероприятие", # Базовая категория для этого сайта
-                "source": url
-            }
-            # Кладем этот пакет в наш общий список
-            collected_events.append(event_data)
+                date_text = "Расписание уточняйте на сайте"
+                if parent_card:
+                    text_block = parent_card.find('div', class_='v-card__text')
+                    if text_block:
+                        date_text = text_block.get_text(separator=" | ", strip=True)
 
-    except Exception as e:
-        print(f"Произошла непредвиденная ошибка при парсинге: {e}")
+                # Формирование пакета данных с точной категорией и ссылкой на подраздел
+                event_data = {
+                    "title": event_title,
+                    "date_info": date_text,
+                    "category": category_name,
+                    "source": target_url
+                }
+                collected_events.append(event_data)
+
+        except Exception as e:
+            print(f"Ошибка при парсинге раздела {target_url}: {e}")
 
     return collected_events
 
 
 def parse_casino_sobranie():
-    """
-    Обновленный парсер официального сайта казино 'Собрание'.
-    Ищет события в элементах списков афиши.
-    """
-    url = "https://www.sobranie-casino.com/ru/current/all/"
+    """ 3. Оптимизированный парсер Казино Собрание (раздел Шоу) """
+    url = "https://www.sobranie-casino.com/ru/current/show/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -78,8 +77,7 @@ def parse_casino_sobranie():
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # На сайте казино элементы афиши выводятся в виде списков.
-        # Проверяем все возможные варианты карточек на этом движке сайта.
+        # Поиск стандартных контейнеров карточек мероприятий
         event_items = soup.find_all('li', class_='events-list__item') or \
                       soup.find_all('a', class_='events-list__item') or \
                       soup.find_all('div', class_='events-item')
@@ -87,24 +85,20 @@ def parse_casino_sobranie():
         print(f"Найдено сырых блоков афиши: {len(event_items)}")
 
         for item in event_items:
-            # Ищем название (оно лежит в блоке с классом, содержащим 'title')
             title_block = item.find(class_='events-item__title') or \
                           item.find(class_='title') or \
                           item.find('h3')
 
-            # Ищем дату (класс, содержащий 'date')
             date_block = item.find(class_='events-item__date') or \
                          item.find(class_='date') or \
                          item.find(class_='events-item__time')
 
             if title_block:
                 title = title_block.text.strip()
-                # Пропускаем пустые или системные строки
                 if not title:
                     continue
 
                 date_text = date_block.text.strip() if date_block else "Дата на сайте казино"
-                # Заменяем внутренние переходы строк на аккуратные пробелы
                 date_text = " ".join(date_text.split())
 
                 collected_events.append({
@@ -114,23 +108,96 @@ def parse_casino_sobranie():
                     "source": url
                 })
 
-        # Если списки не нашлись, делаем аварийный сбор по всем ссылкам с деталями
+        # Аварийный сбор по ссылкам, если стандартные карточки не найдены в HTML
         if not collected_events:
             for link in soup.find_all('a', href=True):
-                if '/event/' in link['href']:
+                href = link['href']
+                if '/event/' in href:
                     title = link.text.strip()
                     if title and len(title) > 5:
+                        clean_title = " ".join(title.split())
+                        full_url = href if href.startswith('http') else "https://www.sobranie-casino.com" + href
                         collected_events.append({
-                            "title": "Мероприятие: " + " ".join(title.split()),
-                            "date_info": "Уточняйте на сайте",
+                            "title": clean_title,
+                            "date_info": "Уточняйте на сайте казино",
                             "category": "Дискотеки и праздники",
-                            "source": url
+                            "source": full_url
                         })
+
+        # Внутренняя очистка списка от дубликатов перед возвратом данных
+        unique_events = []
+        seen_titles = set()
+        for ev in collected_events:
+            if ev["title"] not in seen_titles:
+                seen_titles.add(ev["title"])
+                unique_events.append(ev)
+        return unique_events
 
     except Exception as e:
         print(f"Ошибка при парсинге Казино Собрание: {e}")
 
     return collected_events
+
+
+def parse_casino_shambala():
+    """ 4. Оптимизированный всеядный парсер Казино Шамбала (Gambling Weekend) """
+    url = "https://shambala-games.com"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    collected_events = []
+    print("Парсер Казино Шамбала запущен...")
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            print(f"Ошибка загрузки Шамбалы: {response.status_code}")
+            return collected_events
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Расширяем поиск до заголовков и текстовых параграфов для всеядного захвата
+        for block in soup.find_all(['h2', 'h3', 'p']):
+            title = block.text.strip()
+
+            # Сужаем диапазон длины: названия шоу на Шамбале обычно укладываются в эти рамки
+            if title and 20 < len(title) < 80:
+                local_stop = [
+                    "главная", "контакты", "оферта", "правила", "казино", "о нас",
+                    "игры", "новости", "ресторан", "отель", "турниры", "конфиденциальность",
+                    "согласие", "карта", "программа", "лояльность", "суббота", "пятница",
+                    "политика", "обработка", "вход", "заведение", "игорного", "внимание"
+                ]
+                if any(word in title.lower() for word in local_stop):
+                    continue
+
+                clean_title = " ".join(title.split())
+
+                collected_events.append({
+                    "title": clean_title,
+                    "date_info": "Выходные дни / Уточняйте на сайте казино",
+                    "category": "Дискотеки и праздники",
+                    "source": url
+                })
+
+        # Финальное удаление внутренних дубликатов строк
+        unique_events = []
+        titles_seen = set()
+        for ev in collected_events:
+            if ev["title"] not in titles_seen:
+                titles_seen.add(ev["title"])
+                unique_events.append(ev)
+
+        return unique_events
+
+    except Exception as e:
+        print(f"Ошибка при парсинге Казино Шамбала: {e}")
+
+    return collected_events
+
+
+
 
 
 def parse_klops_afisha():
@@ -223,61 +290,7 @@ def parse_afisha_80let():
     return collected_events
 
 
-def parse_casino_shambala():
-    """
-    Парсер официального сайта казино 'Шамбала' (Калининград).
-    Собирает шоу-программы, концерты и дискотеки выходного дня.
-    """
-    url = "https://shambala-games.com"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
 
-    collected_events = []
-    print("Парсер Казино Шамбала запущен...")
-
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            print(f"Ошибка загрузки Шамбалы: {response.status_code}")
-            return collected_events
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # На сайте Шамбалы анонсы обычно содержатся в тегах h2, h3
-        # или блоках с описанием мероприятий. Применим сбор по текстовым ссылкам и заголовкам
-        for block in soup.find_all(['h2', 'h3', 'a']):
-            title = block.text.strip()
-
-            # Отбираем содержательные названия мероприятий длиннее 15 символов
-            if title and len(title) > 15 and len(title) < 100:
-                # Исключаем элементы навигации сайта
-                if any(word in title.lower() for word in ["главная", "контакты", "оферта", "правила", "казино", "о нас"]):
-                    continue
-
-                clean_title = " ".join(title.split())
-
-                collected_events.append({
-                    "title": clean_title,
-                    "date_info": "Выходные дни / Уточняйте на сайте",
-                    "category": "Дискотеки и праздники",
-                    "source": url
-                })
-
-        # Удаляем дубликаты
-        unique_events = []
-        titles_seen = set()
-        for ev in collected_events:
-            if ev["title"] not in titles_seen:
-                titles_seen.add(ev["title"])
-                unique_events.append(ev)
-
-        return unique_events
-
-    except Exception as e:
-        print(f"Ошибка при парсинге Казино Шамбала: {e}")
-
-    return collected_events
 
 
 def parse_afisha_kaliningrad():
