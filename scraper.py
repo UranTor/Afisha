@@ -1,7 +1,11 @@
 import os
+import sqlite3
 import requests
 from bs4 import BeautifulSoup
-import sqlite3
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "afisha_database.db")
@@ -200,94 +204,112 @@ def parse_casino_shambala():
 
 
 
-def parse_klops_afisha():
-    """ 5. Парсер Клопс Афиши """
-    url = "https://klops.ru/afisha"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-    collected_events = []
-
-    print("Парсер Клопс Афиши запущен...")
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # Поиск всех ссылок на странице
-            for link in soup.find_all('a', href=True):
-                title = link.text.strip()
-                href = link['href']
-
-                # Отбор ссылок, содержащих маркеры мероприятий и длиннее 15 символов
-                if title and len(title) > 15:
-                    # Исключение элементов навигации портала Клопс
-                    if any(word in title.lower() for word in ["купить билет", "все концерты", "политика", "новости", "вход"]):
-                        continue
-
-                    clean_title = " ".join(title.split())
-                    full_url = href if href.startswith('http') else "https://klops.ru" + href
-
-                    collected_events.append({
-                        "title": clean_title,
-                        "date_info": "Уточняйте на Klops.ru",
-                        "category": "Концерты и праздники",
-                        "source": "https://klops.ru/afisha"
-                    })
-    except Exception as e:
-        print(f"Ошибка Клопс Афиши: {e}")
-    return collected_events
-
-
 def parse_afisha_80let():
-    """
-    Универсальный парсер для туристического портала visit-kaliningrad.ru / афиши 80 лет.
-    """
-    url = "https://visit-kaliningrad.ru"
+    """ 6. Высокоточный парсер ТИЦ Калининград (Разделы Афиша и Календарь) """
+    import datetime
+    import requests
+    from bs4 import BeautifulSoup
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-
     collected_events = []
     print("Парсер Афиши 80 лет области запущен...")
 
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            print(f"Ошибка загрузки Афиши области: {response.status_code}")
-            return collected_events
+    # Вычисляем текущую дату для правильного запроса к календарю
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+    # Жестко прописываем правильные адреса страниц прямо внутри функции
+    sections = {
+        "https://visit-kaliningrad.ru": "Общественные мероприятия",
+        f"https://visit-kaliningrad.ru{today_str}": "Календарь событий"
+    }
 
-        # Ищем ссылки, в адресе которых есть маркеры событий
-        for link in soup.find_all('a', href=True):
-            title = link.text.strip()
-            href = link['href']
+    for target_url, category_name in sections.items():
+        try:
+            response = requests.get(target_url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                print(f"Ошибка загрузки раздела {category_name}: {response.status_code}")
+                continue
 
-            if title and len(title) > 12:
-                if any(word in title.lower() for word in ["карта", "маршруты", "о нас", "контакты", "назад"]):
-                    continue
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-                clean_title = " ".join(title.split())
-                full_url = href if href.startswith('http') else "https://visit-kaliningrad.ru" + href
+            # --- ВЕТКА 1: ОБРАБОТКА ХРОНОЛОГИЧЕСКОГО КАЛЕНДАРЯ ---
+            if "calendar" in target_url:
+                # На этой странице данные идут сплошным текстом. Собираем параграфы или дивы.
+                # Мы ищем ключевые маркеры структуры, которую вы описали
+                text_blocks = soup.find_all(['div', 'p', 'span'])
 
-                collected_events.append({
-                    "title": clean_title,
-                    "date_info": "Смотрите на visit-kaliningrad.ru",
-                    "category": "Общественные мероприятия",
-                    "source": full_url
-                })
+                current_date = "Дата уточняется"
+                for block in text_blocks:
+                    text = block.get_text(strip=True)
 
-        unique_events = []
-        titles_seen = set()
-        for ev in collected_events:
-            if ev["title"] not in titles_seen:
-                titles_seen.add(ev["title"])
-                unique_events.append(ev)
+                    # Ловим маркер даты
+                    if text.lower() == "дата" or text.lower().startswith("дата:"):
+                        # Обычно сама дата идет в следующем элементе, либо в этом же
+                        continue
 
-        return unique_events
+                    # Ловим маркер мероприятия
+                    if "мероприятие" in text.lower():
+                        # Вытаскиваем чистое название события из соседнего блока или очищаем строку
+                        event_title = text.replace("мероприятие", "").replace("Мероприятие", "").strip(" :")
 
-    except Exception as e:
-        print(f"Ошибка при парсинге Афиши области: {e}")
-    return collected_events
+                        if event_title and len(event_title) > 10:
+                            collected_events.append({
+                                "title": "Календарь: " + " ".join(event_title.split()),
+                                "date_info": "Смотрите в календаре ТИЦ",
+                                "category": "Общественные мероприятия",
+                                "source": "https://visit-kaliningrad.ru"
+                            })
+
+            # --- ВЕТКА 2: ОБРАБОТКА СТАНДАРТНОЙ АФИШИ ССЫЛОК ---
+            else:
+                for link in soup.find_all('a', href=True):
+                    href = link['href']
+                    title = link.text.strip()
+
+                    if "/events/" in href and href != "/events/":
+                        if title and len(title) > 12:
+                            local_stop = ["карта", "маршруты", "о нас", "контакты", "назад"]
+                            if any(word in title.lower() for word in local_stop):
+                                continue
+
+                            clean_title = " ".join(title.split())
+                            full_url = href if href.startswith('http') else "https://visit-kaliningrad.ru" + href
+
+                            collected_events.append({
+                                "title": clean_title,
+                                "date_info": "Смотрите на visit-kaliningrad.ru",
+                                "category": "Общественные мероприятия",
+                                "source": "https://visit-kaliningrad.ru"
+                            })
+
+        except Exception as e:
+            print(f"Ошибка при парсинге раздела {category_name}: {e}")
+
+    # Удаление внутренних дубликатов строк
+    unique_events = []
+    titles_seen = set()
+    for ev in collected_events:
+        if ev["title"] not in titles_seen:
+            titles_seen.add(ev["title"])
+            unique_events.append(ev)
+
+    return unique_events
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -368,6 +390,93 @@ def parse_yandex_kaliningrad():
     except Exception as e:
         print(f"Ошибка Яндекс Калининград: {e}")
     return collected_events
+
+
+def parse_klops_afisha():
+    """ 5. Высокотехнологичный автономный парсер Клопс Афиши на движке Selenium """
+    collected_events = []
+    print("Парсер Клопс Афиши запущен...")
+
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")  # Актуальный фоновый режим для Chrome
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+
+    # Защита от блокировок по сети
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+    # Попытка найти стандартный путь к Google Chrome на Windows, если Selenium его теряет
+    possible_chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+    ]
+    for path in possible_chrome_paths:
+        if os.path.exists(path):
+            chrome_options.binary_location = path
+            break
+
+    sections = {
+        "https://klops.ru": "Концерты",
+        "https://klops.ru": "Театр",
+        "https://klops.ru": "Выставки"
+    }
+
+    driver = None
+    try:
+        # Инициализируем браузер. Selenium 4+ сам свяжется с системным Chrome
+        # через установленные бинарные файлы без скачивания внешних драйверов.
+        driver = webdriver.Chrome(options=chrome_options)
+
+        for target_url, category_name in sections.items():
+            print(f"Браузер загружает раздел Клопс: {category_name}...")
+            driver.get(target_url)
+
+            # Ожидание 4 секунды для отработки тяжелых JS-скриптов Клопса
+            time.sleep(4)
+
+            page_source = driver.page_source
+            soup = BeautifulSoup(page_source, 'html.parser')
+
+            for link in soup.find_all('a', href=True):
+                href = link['href']
+
+                if '/afisha/event/' in href or '/event/' in href:
+                    title = link.text.strip()
+
+                    if title and len(title) > 12:
+                        if any(word in title.lower() for word in ["купить", "билет", "подробнее"]):
+                            continue
+
+                        clean_title = " ".join(title.split())
+                        full_url = href if href.startswith('http') else "https://klops.ru" + href
+
+                        collected_events.append({
+                            "title": clean_title,
+                            "date_info": "Уточняйте расписание на Klops.ru",
+                            "category": category_name,
+                            "source": target_url
+                        })
+
+    except Exception as e:
+        print(f"Критическая ошибка Selenium при парсинге Клопса: {e}")
+    finally:
+        if driver:
+            driver.quit()
+
+    unique_events = []
+    titles_seen = set()
+    for ev in collected_events:
+        if ev["title"] not in titles_seen:
+            titles_seen.add(ev["title"])
+            unique_events.append(ev)
+
+    return unique_events
+
 
 
 def save_events_to_db(events_list):
