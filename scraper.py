@@ -1,6 +1,10 @@
+import os
 import requests
 from bs4 import BeautifulSoup
-import sqlite3  # <- ДОБАВЛЯЕМ ЭТУ СТРОКУ
+import sqlite3
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, "afisha_database.db")
 
 
 def parse_gokaliningrad():
@@ -361,7 +365,7 @@ def save_events_to_db(events_list):
     conn = sqlite3.connect("afisha_database.db")
     cursor = conn.cursor()
 
-    # СПИСОК СТОП-СЛОВ (Объединенный и очищенный от повторов)
+    # Оптимизированный список стоп-слов (удалены дубликаты и поглощаемые строки)
     stop_words = [
         # --- Системные и технические термины ---
         "пароль", "зарегистрироваться", "вход", "регистрация", "логин",
@@ -370,8 +374,8 @@ def save_events_to_db(events_list):
         "правила", "новости", "назад", "главная", "показать все", "купить билет",
         "все концерты", "подробнее", "кабинет", "профиль", "согласие",
         "забыли свой пароль?", "соглашение об обработке персональных данных",
-        "разработка сайта:", "продвижение сайта:", "согласие на обработку персональных данных",
-        "политикой обработки персональных данных", "ответственная игра", "регламенты акций",
+        "разработка сайта:", "продвижение сайта:", "ответственная игра",
+        "регламенты акций",
 
         # --- Навигация и инфо-блоки visit-kaliningrad ---
         "получить паспорт туриста", "чем заняться осенью", "чем заняться зимой",
@@ -387,7 +391,7 @@ def save_events_to_db(events_list):
         "индивидуальные экскурсии с аттестованными гидами", "выдадим карты и путеводители бесплатно!",
         "подскажем самые интересные мероприятия", "составим маршрут для самостоятельного путешествия",
         "подберём туры и экскурсии", "сотрудничаем с объектами туризма", "серебряное ожерелье",
-        "афиша мероприятий", "компас балтийской кухни", "о путешествии в ко", "туристический центр",
+        "компас балтийской кухни", "о путешествии в ко", "туристический центр",
         "концерты, выставки, фестивали в рамках празднования 80-летия калининградской области",
 
         # --- Адреса, контакты и телефоны ---
@@ -401,23 +405,21 @@ def save_events_to_db(events_list):
         "подробнее о программе лояльности", "только по приглашению и наличии от 200 000 бонусных баллов в месяц"
     ]
 
-
     saved_count = 0
 
     for event in events_list:
         title = event["title"]
 
-        # 1. Проверяем на стоп-слова
-        # Переводим название в нижний регистр (.lower()), чтобы ловить и "Вход", и "вход"
+        # 1. Проверка на стоп-слова
         if any(word in title.lower() for word in stop_words):
-            continue # Пропускаем это "событие" и идем к следующему
+            continue
 
-        # 2. Проверяем на слишком короткие технические названия (например, "ОК", "Ещё")
+        # 2. Проверка на длину строки
         if len(title.strip()) < 10:
             continue
 
         try:
-            # INSERT OR IGNORE защищает от дубликатов
+            # Запись данных по 4 стандартным колонкам текущей схемы БД
             cursor.execute('''
                            INSERT OR IGNORE INTO events (title, date_info, category, source_url)
                 VALUES (?, ?, ?, ?)
@@ -425,10 +427,10 @@ def save_events_to_db(events_list):
 
             if cursor.rowcount > 0:
                 saved_count += 1
+                conn.commit()  # Фиксация строки сразу для защиты от блокировок
         except Exception as e:
             print(f"Ошибка записи события в БД: {e}")
 
-    conn.commit()
     conn.close()
     print(f"Фильтрация завершена. В базу данных добавлено чистых событий: {saved_count}")
 
@@ -440,9 +442,9 @@ def run_all_parsers():
     """
     print("\n=== ЗАПУСК ГЛОБАЛЬНОГО СБОРЩИКА АФИШИ ===")
 
-    conn = sqlite3.connect("afisha_database.db")
+    # Привязка к абсолютному имени файла для исключения ошибок поиска таблиц
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Берем только активные источники (где is_active = 1)
     cursor.execute("SELECT name, url FROM sources WHERE is_active = 1")
     active_sources = cursor.fetchall()
     conn.close()
@@ -454,12 +456,11 @@ def run_all_parsers():
         print(f"\nПроверяем источник: {name} ({url})")
         results = []
 
-        # Умная развилка: анализируем адрес сайта и вызываем нужную функцию
         if "gokaliningrad.com" in url:
             results = parse_gokaliningrad()
-        elif "afisha.ru" in url:  # <- ПОДКЛЮЧЕНИЕ НОВОГО ПАРСЕРА АФИША КЛД
+        elif "afisha.ru" in url:
             results = parse_afisha_kaliningrad()
-        elif "yandex.ru" in url:  # <- ПОДКЛЮЧЕНИЕ НОВОГО ПАРСЕРА ЯНДЕКСА
+        elif "yandex.ru" in url:
             results = parse_yandex_kaliningrad()
         elif "sobranie-casino.com" in url:
             results = parse_casino_sobranie()
@@ -470,8 +471,7 @@ def run_all_parsers():
         elif "visit-kaliningrad.ru" in url:
             results = parse_afisha_80let()
         else:
-            print(f"⚠️ Для сайта {name} еще не написан точный парсер. Запускаем базовый сбор.")
-            # Сюда в будущем можно поставить универсальный парсер
+            print(f"⚠️ Для сайта {name} еще не написан точный парсер. Пропускаем.")
             continue
 
         print(f"-> Собрано событий: {len(results)}")
@@ -479,9 +479,5 @@ def run_all_parsers():
             save_events_to_db(results)
 
 
-
-
 if __name__ == "__main__":
-    # Теперь при запуске файла scraper.py автоматически выполнится весь цикл сбора по базе данных!
     run_all_parsers()
-

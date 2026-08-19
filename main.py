@@ -1,64 +1,75 @@
+import os
 import sqlite3
-import time
 import asyncio
-from fastapi import FastAPI, Form, BackgroundTasks
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 # Импортируем наш глобальный сборщик из соседнего файла scraper.py
 from scraper import run_all_parsers
 
-app = FastAPI(title="Афиша Калининграда")
+# НАСТРОЙКА ПУТИ: Автоматически вычисляем точный абсолютный путь к базе данных
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, "afisha_database.db")
+
 
 async def auto_update_scheduler():
-    """
-    Это вечный автоматический таймер. Он работает в фоне приложения.
-    Запускает сборщик данных сразу при включении сайта, а затем каждые 6 часов.
-    """
+    """ Фоновый таймер обновлений (каждые 6 часов) """
     # Небольшая пауза на старте, чтобы база данных успела открыться
     await asyncio.sleep(5)
 
     while True:
         try:
             print("\n⏰ Фоновый таймер сработал! Начинаем автоматический сбор афиши...")
-            # Запускаем наш диспетчер парсеров
             run_all_parsers()
             print("⏰ Автоматический сбор успешно завершен. Следующий сбор через 6 часов.")
         except Exception as e:
             print(f"❌ Ошибка в работе фонового таймера: {e}")
 
-        # Ждем 6 часов (6 часов * 60 минут * 60 секунд = 21600 секунд)
-        # Для тестов можно поставить например 60 секунд, чтобы увидеть работу сразу
+        # Интервал ожидания 6 часов
         await asyncio.sleep(21600)
 
-@app.on_event("startup")
-async def startup_event():
-    """Этот блок срабатывает АВТОМАТИЧЕСКИ в момент запуска сервера uvicorn"""
-    # Запускаем наш вечный таймер в фоновом режиме, чтобы он не тормозил работу самого сайта
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """ Современный менеджер контекста для безопасного запуска фоновых задач """
     asyncio.create_task(auto_update_scheduler())
-    print("🚀 Автоматический планировщик обновлений успешно запущен!")
+    print("🚀 Автоматический планировщик обновлений успешно запущен через Lifespan!")
+    yield
+    print("🛑 Приложение останавливается...")
+
+
+# Инициализация приложения с подключением lifespan-менеджера
+app = FastAPI(title="Афиша Калининграда", lifespan=lifespan)
 
 
 def get_all_events():
-    conn = sqlite3.connect("afisha_database.db")
+    """ Получает события из базы данных по абсолютному пути """
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    # Сортировка по умолчанию идет по id (новые выше)
     cursor.execute("SELECT title, date_info, category, source_url FROM events ORDER BY id DESC")
     rows = cursor.fetchall()
     conn.close()
     return rows
 
+
 def get_all_sources():
-    conn = sqlite3.connect("afisha_database.db")
+    """ Получает список всех источников по абсолютному пути """
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, url, category FROM sources")
     rows = cursor.fetchall()
     conn.close()
     return rows
 
+
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     events = get_all_events()
     sources = get_all_sources()
 
+    # 1. Генерируем строки таблицы событий
     table_rows = ""
     for event in events:
         table_rows += f"""
@@ -70,6 +81,7 @@ def read_root():
         </tr>
         """
 
+    # 2. Генерируем список источников для админки
     source_rows = ""
     for src in sources:
         source_rows += f"""
@@ -81,6 +93,7 @@ def read_root():
         </tr>
         """
 
+    # Формирование HTML-страницы
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -141,9 +154,10 @@ def read_root():
                         <label>Категория событий:</label>
                         <select name="category">
                             <option value="Общественное мероприятие">Общественное мероприятие</option>
+                            <option value="Общественные мероприятия">Общественные мероприятия</option>
                             <option value="Мото тусовки">Мото тусовки</option>
-                            <option value="Вело мероприятия">Вело мероприятия</option>
                             <option value="Концерты">Концерты</option>
+                            <option value="Концерты и праздники">Концерты и праздники</option>
                             <option value="Дискотеки и праздники">Дискотеки и праздники</option>
                         </select>
                     </div>
@@ -171,12 +185,17 @@ def read_root():
     """
     return HTMLResponse(content=html_content)
 
+
 @app.post("/add-source")
 def add_source(name: str = Form(...), url: str = Form(...), category: str = Form(...)):
-    conn = sqlite3.connect("afisha_database.db")
+    """ Добавление нового сайта-источника в базу через форму на сайте """
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO sources (name, url, category) VALUES (?, ?, ?)", (name, url, category))
+        cursor.execute(
+            "INSERT OR IGNORE INTO sources (name, url, category) VALUES (?, ?, ?)",
+            (name, url, category)
+        )
         conn.commit()
     except Exception as e:
         print(f"Ошибка добавления: {e}")
@@ -184,11 +203,17 @@ def add_source(name: str = Form(...), url: str = Form(...), category: str = Form
         conn.close()
     return RedirectResponse(url="/", status_code=303)
 
+
 @app.get("/delete-source/{source_id}")
 def delete_source(source_id: int):
-    conn = sqlite3.connect("afisha_database.db")
+    """ Удаление источника из базы данных """
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM sources WHERE id = ?", (source_id,))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("DELETE FROM sources WHERE id = ?", (source_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка удаления: {e}")
+    finally:
+        conn.close()
     return RedirectResponse(url="/", status_code=303)
