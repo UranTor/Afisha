@@ -400,19 +400,19 @@ def parse_klops_afisha():
     print("Парсер Клопс Афиши запущен...")
 
     chrome_options = Options()
-    chrome_options.add_argument("--headless=new")  # Актуальный фоновый режим для Chrome
+    # ТЕСТОВЫЙ РЕЖИМ: Фоновый режим отключен для визуального контроля
+    # chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
 
-    # Защита от блокировок по сети
+    # Защита от блокировок
     chrome_options.add_argument("--ignore-certificate-errors")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-    # Попытка найти стандартный путь к Google Chrome на Windows, если Selenium его теряет
     possible_chrome_paths = [
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
@@ -422,47 +422,43 @@ def parse_klops_afisha():
             chrome_options.binary_location = path
             break
 
+    # СТРОГО ВАШИ ОРИГИНАЛЬНЫЕ АДРЕСА СТРАНИЦ ПОИСКА КЛОПСА:
     sections = {
-        "https://klops.ru": "Концерты",
-        "https://klops.ru": "Театр",
-        "https://klops.ru": "Выставки"
+        "https://klops.ru/afisha/search?search=&category=kontserty&period=plus_year": "Концерты",
+        "https://klops.ru/afisha/search?search=&category=teatr&period=plus_year": "Театр",
+        "https://klops.ru/afisha/search?search=&category=vystavki&period=plus_year": "Выставки"
     }
 
     driver = None
     try:
-        # Инициализируем браузер. Selenium 4+ сам свяжется с системным Chrome
-        # через установленные бинарные файлы без скачивания внешних драйверов.
         driver = webdriver.Chrome(options=chrome_options)
 
         for target_url, category_name in sections.items():
-            print(f"Браузер загружает раздел Клопс: {category_name}...")
+            print(f"Браузер физически открывает раздел Клопс: {category_name}...")
             driver.get(target_url)
 
-            # Ожидание 4 секунды для отработки тяжелых JS-скриптов Клопса
-            time.sleep(4)
+            # Пауза 5 секунд для полной отрисовки карточек скриптами JavaScript
+            time.sleep(5)
 
             page_source = driver.page_source
             soup = BeautifulSoup(page_source, 'html.parser')
 
-            for link in soup.find_all('a', href=True):
-                href = link['href']
+            # Точечный сбор названий мероприятий по тегам h4 из текстового слепка
+            for block in soup.find_all('h4'):
+                title = block.text.strip()
 
-                if '/afisha/event/' in href or '/event/' in href:
-                    title = link.text.strip()
+                if title and len(title) > 8:
+                    if any(word in title.lower() for word in ["афиша клопс", "билеты на", "купить билет"]):
+                        continue
 
-                    if title and len(title) > 12:
-                        if any(word in title.lower() for word in ["купить", "билет", "подробнее"]):
-                            continue
+                    clean_title = " ".join(title.split())
 
-                        clean_title = " ".join(title.split())
-                        full_url = href if href.startswith('http') else "https://klops.ru" + href
-
-                        collected_events.append({
-                            "title": clean_title,
-                            "date_info": "Уточняйте расписание на Klops.ru",
-                            "category": category_name,
-                            "source": target_url
-                        })
+                    collected_events.append({
+                        "title": clean_title,
+                        "date_info": "Уточняйте расписание на Klops.ru",
+                        "category": category_name,
+                        "source": target_url
+                    })
 
     except Exception as e:
         print(f"Критическая ошибка Selenium при парсинге Клопса: {e}")
@@ -478,6 +474,9 @@ def parse_klops_afisha():
             unique_events.append(ev)
 
     return unique_events
+
+
+
 
 
 
