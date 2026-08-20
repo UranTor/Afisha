@@ -6,7 +6,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "afisha_database.db")
 
@@ -201,93 +200,59 @@ def parse_casino_shambala():
     return collected_events
 
 
-
-
-
 def parse_afisha_80let():
-    """ 6. Высокоточный парсер ТИЦ Калининград (Разделы Афиша и Календарь) """
-    import datetime
-    import requests
-    from bs4 import BeautifulSoup
-
+    """ 6. Стабильный парсер ТИЦ Калининград (Раздел Афиша + Карточка-заглушка Календаря) """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     collected_events = []
     print("Парсер Афиши 80 лет области запущен...")
 
-    # Вычисляем текущую дату для правильного запроса к календарю
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    # --- ЧАСТЬ 1: ГЕНЕРАЦИЯ УНИВЕРСАЛЬНОЙ КАРТОЧКИ-ЗАГЛУШКИ ДЛЯ КАЛЕНДАРЯ ---
+    calendar_url = "https://visit-kaliningrad.ru"
+    collected_events.append({
+        "title": "📅 Сводный календарь крупных городских и туристических событий Калининградской области",
+        "date_info": "Актуальное расписание на весь год (обновляется ТИЦ)",
+        "category": "Общественные мероприятия",
+        "source": calendar_url
+    })
 
-    # Жестко прописываем правильные адреса страниц прямо внутри функции
-    sections = {
-        "https://visit-kaliningrad.ru": "Общественные мероприятия",
-        f"https://visit-kaliningrad.ru{today_str}": "Календарь событий"
-    }
-
-    for target_url, category_name in sections.items():
-        try:
-            response = requests.get(target_url, headers=headers, timeout=10)
-            if response.status_code != 200:
-                print(f"Ошибка загрузки раздела {category_name}: {response.status_code}")
-                continue
-
+    # --- ЧАСТЬ 2: СБОР ТЕКУЩИХ СОБЫТИЙ ИЗ СТАНДАРТНОГО РАЗДЕЛА АФИШИ ---
+    events_url = "https://visit-kaliningrad.ru"
+    try:
+        response = requests.get(events_url, headers=headers, timeout=10)
+        if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # --- ВЕТКА 1: ОБРАБОТКА ХРОНОЛОГИЧЕСКОГО КАЛЕНДАРЯ ---
-            if "calendar" in target_url:
-                # На этой странице данные идут сплошным текстом. Собираем параграфы или дивы.
-                # Мы ищем ключевые маркеры структуры, которую вы описали
-                text_blocks = soup.find_all(['div', 'p', 'span'])
+            # Сканируем ссылки, ведущие на конкретные карточки мероприятий
+            for link in soup.find_all('a', href=True):
+                href = link['href']
+                title = link.text.strip()
 
-                current_date = "Дата уточняется"
-                for block in text_blocks:
-                    text = block.get_text(strip=True)
+                # Отбираем только детальные страницы событий, отсекаем ссылки на разделы меню
+                if "/events/" in href and href != "/events/":
+                    if title and len(title) > 12:
+                        # Локальный черный список для защиты от системных надписей
+                        local_stop = ["карта", "маршруты", "о нас", "контакты", "назад", "подробнее", "купить билет"]
+                        if any(word in title.lower() for word in local_stop):
+                            continue
 
-                    # Ловим маркер даты
-                    if text.lower() == "дата" or text.lower().startswith("дата:"):
-                        # Обычно сама дата идет в следующем элементе, либо в этом же
-                        continue
+                        clean_title = " ".join(title.split())
+                        full_url = href if href.startswith('http') else "https://visit-kaliningrad.ru" + href
 
-                    # Ловим маркер мероприятия
-                    if "мероприятие" in text.lower():
-                        # Вытаскиваем чистое название события из соседнего блока или очищаем строку
-                        event_title = text.replace("мероприятие", "").replace("Мероприятие", "").strip(" :")
+                        collected_events.append({
+                            "title": clean_title,
+                            "date_info": "Смотрите подробности на visit-kaliningrad.ru",
+                            "category": "Общественные мероприятия",
+                            "source": full_url
+                        })
+        else:
+            print(f"Предупреждение: Раздел афиши ТИЦ вернул статус {response.status_code}")
 
-                        if event_title and len(event_title) > 10:
-                            collected_events.append({
-                                "title": "Календарь: " + " ".join(event_title.split()),
-                                "date_info": "Смотрите в календаре ТИЦ",
-                                "category": "Общественные мероприятия",
-                                "source": "https://visit-kaliningrad.ru"
-                            })
+    except Exception as e:
+        print(f"Ошибка при парсинге раздела стандартной афиши ТИЦ: {e}")
 
-            # --- ВЕТКА 2: ОБРАБОТКА СТАНДАРТНОЙ АФИШИ ССЫЛОК ---
-            else:
-                for link in soup.find_all('a', href=True):
-                    href = link['href']
-                    title = link.text.strip()
-
-                    if "/events/" in href and href != "/events/":
-                        if title and len(title) > 12:
-                            local_stop = ["карта", "маршруты", "о нас", "контакты", "назад"]
-                            if any(word in title.lower() for word in local_stop):
-                                continue
-
-                            clean_title = " ".join(title.split())
-                            full_url = href if href.startswith('http') else "https://visit-kaliningrad.ru" + href
-
-                            collected_events.append({
-                                "title": clean_title,
-                                "date_info": "Смотрите на visit-kaliningrad.ru",
-                                "category": "Общественные мероприятия",
-                                "source": "https://visit-kaliningrad.ru"
-                            })
-
-        except Exception as e:
-            print(f"Ошибка при парсинге раздела {category_name}: {e}")
-
-    # Удаление внутренних дубликатов строк
+    # Удаление внутренних дубликатов строк перед отправкой в базу данных
     unique_events = []
     titles_seen = set()
     for ev in collected_events:
@@ -298,98 +263,135 @@ def parse_afisha_80let():
     return unique_events
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def parse_afisha_kaliningrad():
-    """ 7. Парсер Афиши Калининград (afisha.ru) """
-    url = "https://afisha.ru/kaliningrad/"
+    """ 7. Оптимизированный многостраничный парсер Афиши Калининград (afisha.ru) """
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     collected_events = []
 
+    # Словарь целевых адресов разделов с жесткой привязкой к смысловым категориям
+    sections = {
+        "https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/": "Экскурсии",
+        "https://www.afisha.ru/kaliningrad/party/": "Дискотеки и праздники",
+        "https://www.afisha.ru/kaliningrad/schedule_exhibition/": "Выставки",
+        "https://www.afisha.ru/kaliningrad/schedule_concert/": "Концерты",
+        "https://www.afisha.ru/kaliningrad/festivals/": "Дискотеки и праздники" # Категория под Фестивали из вашей структуры select формы
+    }
+
     print("Парсер Афиши Калининград запущен...")
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
+
+    # Последовательный обход всех 5 разделов
+    for target_url, category_name in sections.items():
+        try:
+            response = requests.get(target_url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                print(f"Ошибка загрузки подраздела {category_name}: {response.status_code}")
+                continue
+
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Поиск всех ссылок на странице для извлечения названий
             for link in soup.find_all('a', href=True):
                 title = link.text.strip()
                 href = link['href']
 
-                # Фильтрация по длине текста для отсечения коротких пунктов меню
+                # Фильтрация по длине строки для удаления элементов интерфейса
                 if title and len(title) > 12:
-                    # Исключение служебных переходов
-                    if any(word in title.lower() for word in ["купить", "билеты", "выбрать", "акции", "скидки", "кабинет"]):
+                    # Черный список для отсечения служебной навигации afisha.ru
+                    if any(word in title.lower() for word in ["купить", "билеты", "выбрать", "акции", "скидки", "кабинет", "подборки", " daily "]):
                         continue
 
                     clean_title = " ".join(title.split())
-                    full_url = href if href.startswith('http') else "https://afisha.ru/kaliningrad/" + href
+                    full_url = href if href.startswith('http') else "https://www.afisha.ru" + href
 
                     collected_events.append({
                         "title": clean_title,
-                        "date_info": "Уточняйте на Afisha.ru",
-                        "category": "Концерты",
-                        "source": url
+                        "date_info": "Уточняйте расписание на Afisha.ru",
+                        "category": category_name,
+                        "source": target_url
                     })
-    except Exception as e:
-        print(f"Ошибка Афиши Калининград: {e}")
-    return collected_events
+        except Exception as e:
+            print(f"Ошибка при парсинге подраздела {category_name}: {e}")
+
+    # КРИТИЧЕСКИ ВАЖНО: Удаление дубликатов заголовков перед передачей в БД
+    unique_events = []
+    seen_titles = set()
+    for ev in collected_events:
+        if ev["title"] not in seen_titles:
+            seen_titles.add(ev["title"])
+            unique_events.append(ev)
+
+    return unique_events
 
 
 def parse_yandex_kaliningrad():
-    """ 8. Парсер Яндекс Калининград (afisha.yandex.ru) """
-    url = "https://afisha.yandex.ru/kaliningrad"
+    """ 8. Оптимизированный многостраничный парсер Яндекс Калининград (afisha.yandex.ru) """
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     collected_events = []
 
+    # Словарь 7 целевых адресов Яндекса с привязкой к категориям вашей базы данных
+    sections = {
+        "https://afisha.yandex.ru/kaliningrad/concert?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu&multiFilter=2.concert%2C7.non-children": "Концерты",
+        "https://afisha.yandex.ru/kaliningrad/festival?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Дискотеки и праздники",
+        "https://afisha.yandex.ru/kaliningrad/theatre?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Театр",
+        "https://afisha.yandex.ru/kaliningrad/standup?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Концерты", # Стендап относим к концертам/юмору
+        "https://afisha.yandex.ru/kaliningrad/art?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Выставки",
+        "https://afisha.yandex.ru/kaliningrad/show?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Дискотеки и праздники", # Шоу относим к праздникам
+        "https://afisha.yandex.ru/kaliningrad/excursions?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Экскурсии"
+    }
+
     print("Парсер Яндекс Калининград запущен...")
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
+
+    # Последовательный обход всех 7 разделов
+    for target_url, category_name in sections.items():
+        try:
+            response = requests.get(target_url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                print(f"Ошибка загрузки раздела Яндекса {category_name}: {response.status_code}")
+                continue
+
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Сбор текстовых ссылок на мероприятия
-            for link in soup.find_all('a', href=True):
-                title = link.text.strip()
-                href = link['href']
+            # СТРОГИЙ ТОЧЕЧНЫЙ ФИЛЬТР: Карточки событий на Яндекс Афише всегда используют тег h2 для названий.
+            # Это полностью исключает попадание списка городов, меню навигации и подвала сайта.
+            for block in soup.find_all('h2'):
+                title = block.text.strip()
 
-                if title and len(title) > 12:
-                    # Исключение служебных элементов интерфейса Яндекса
-                    if any(word in title.lower() for word in ["купить", "билеты", "выбрать", "акции", "вход", "кабинет"]):
+                # Отсекаем пустые блоки и слишком короткие технические строки
+                if title and len(title) > 5:
+                    # Локальный черный список для исключения заголовков блоков рекомендаций
+                    if any(word in title.lower() for word in ["подборки", "скачайте приложение", "это вы?"]):
                         continue
 
                     clean_title = " ".join(title.split())
-                    full_url = href if href.startswith('http') else "https://afisha.yandex.ru" + href
 
                     collected_events.append({
                         "title": clean_title,
-                        "date_info": "Уточняйте на Яндекс Афише",
-                        "category": "Концерты",
-                        "source": url
+                        "date_info": "Уточняйте расписание на Яндекс Афише",
+                        "category": category_name,
+                        "source": target_url
                     })
-    except Exception as e:
-        print(f"Ошибка Яндекс Калининград: {e}")
-    return collected_events
+        except Exception as e:
+            print(f"Ошибка при парсинге раздела Яндекса {category_name}: {e}")
+
+    # УДАЛЕНИЕ ДУБЛИКАТОВ: Фильтруем повторы заголовков перед передачей в диспетчер
+    unique_events = []
+    seen_titles = set()
+    for ev in collected_events:
+        if ev["title"] not in seen_titles:
+            seen_titles.add(ev["title"])
+            unique_events.append(ev)
+
+    return unique_events
+
+
+
+
+
+
+
 
 
 def parse_klops_afisha():
@@ -476,7 +478,6 @@ def parse_klops_afisha():
             unique_events.append(ev)
 
     return unique_events
-
 
 
 def save_events_to_db(events_list):
