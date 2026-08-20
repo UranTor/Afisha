@@ -387,21 +387,14 @@ def parse_yandex_kaliningrad():
     return unique_events
 
 
-
-
-
-
-
-
-
 def parse_klops_afisha():
     """ 5. Высокотехнологичный автономный парсер Клопс Афиши на движке Selenium """
     collected_events = []
     print("Парсер Клопс Афиши запущен...")
 
     chrome_options = Options()
-    # ТЕСТОВЫЙ РЕЖИМ: Фоновый режим отключен для визуального контроля
-    # chrome_options.add_argument("--headless=new")
+    # АКТИВАЦИЯ ФОНОВОГО РЕЖИМА: Теперь окно браузера открываться на экране НЕ БУДЕТ
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -474,11 +467,6 @@ def parse_klops_afisha():
             unique_events.append(ev)
 
     return unique_events
-
-
-
-
-
 
 
 
@@ -597,11 +585,6 @@ def save_events_to_db(events_list):
 
     conn.close()
     print(f"Фильтрация завершена. В базу данных добавлено чистых событий: {saved_count}")
-
-
-
-
-
 
 
 def run_all_parsers():
