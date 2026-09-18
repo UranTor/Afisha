@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import asyncio
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -183,6 +184,10 @@ def read_root():
     </body>
     </html>
     """
+
+    output_file = Path(__file__).resolve().parent / "index.html"
+    output_file.write_text(html_content, encoding="utf-8")
+
     return HTMLResponse(content=html_content)
 
 
