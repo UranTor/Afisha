@@ -182,17 +182,17 @@ def read_root():
             </div>
             
             
-            <!-- НАЧАЛО БЛОКА СЧЕТЧИКА LIVEINTERNET -->
+            <!-- НАЧАЛО БЛОКА НОВОГО СЧЕТЧИКА LIVEINTERNET (ЛЕВЫЙ КРАЙ) -->
             <div style="text-align: left; margin: 30px 0; padding-left: 15px;">
                 <!--LiveInternet counter-->
                 <a href="https://www.liveinternet.ru/click" target="_blank">
-                    <img id="licnt3CE2" width="88" height="120" style="border:0" 
+                    <img id="licnt9B50" width="88" height="120" style="border:0" 
                          title="LiveInternet: показано количество просмотров и посетителей"
                          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7" alt=""/>
                 </a>
                 <script>
                     (function(d,s){{
-                        d.getElementById("licnt3CE2").src="https://counter.yadro.ru/hit?t28.14;r"+escape(d.referrer)+
+                        d.getElementById("licnt9B50").src="https://counter.yadro.ru/hit?t28.14;r"+escape(d.referrer)+
                         ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
                         (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
                         ";h"+escape(d.title.substring(0,150))+";"+Math.random()
@@ -200,7 +200,7 @@ def read_root():
                 </script>
                 <!--/LiveInternet-->
             </div>
-            <!-- КОНЕЦ БЛОКА СЧЕТЧИКА LIVEINTERNET -->
+            <!-- КОНЕЦ БЛОКА НОВОГО СЧЕТЧИКА LIVEINTERNET -->
             
         </div>
     </body>
