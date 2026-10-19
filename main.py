@@ -180,7 +180,8 @@ def read_root():
                     </tbody>
                 </table>
             </div>
-            
+                       
+                        # Блок формирования HTML-страницы внутри main.py
             
             <!-- НАЧАЛО БЛОКА ОБНОВЛЕННОГО СЧЕТЧИКА LIVEINTERNET (ЛЕВЫЙ КРАЙ) -->
             <div style="text-align: left; margin: 30px 0; padding-left: 15px;">
