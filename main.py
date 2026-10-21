@@ -95,34 +95,44 @@ def read_root():
         """
 
     # Формирование HTML-страницы
-    html_content = f"""
-    <!DOCTYPE html>
+        html_content = f"""
+ <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
         <title>Афиша Калининграда</title>
         <style>
-            body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background-color: #f4f7f6; color: #333; }}
-            h1, h2 {{ color: #2c3e50; text-align: center; }}
-            .container {{ max-width: 1200px; margin: 0 auto; }}
-            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; margin-bottom: 50px; }}
-            th, td {{ padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }}
-            th {{ background-color: #2ecc71; color: white; text-transform: uppercase; font-size: 13px; }}
+            /* МАКСИМАЛЬНО УВЕЛИЧЕННЫЙ ШРИФТ ДЛЯ ВЫСОКОЙ ЧИТАЕМОСТИ */
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 20px 40px; background-color: #f4f7f6; color: #333; font-size: 18px; }}
+            h1 {{ color: #2c3e50; text-align: center; font-size: 32px; }}
+            h2 {{ color: #2c3e50; text-align: center; font-size: 26px; }}
+            .container {{ max-width: 1250px; margin: 0 auto; }}
+            
+            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; margin-bottom: 25px; }}
+            
+            /* КРУПНЫЙ ШРИФТ В ЯЧЕЙКАХ С ЖЕСТКИМ МИНИМАЛЬНЫМ ОТСТУПОМ (padding 5px 12px) */
+            th, td {{ padding: 5px 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 18px; line-height: 1.4; }}
+            
+            /* ЗАГОЛОВКИ КОЛОНОК ТАБЛИЦЫ */
+            th {{ background-color: #2ecc71; color: white; text-transform: uppercase; font-size: 19px; letter-spacing: 0.5px; }}
             .source-th {{ background-color: #34495e; }}
             tr:hover {{ background-color: #fafafa; }}
-            .badge {{ background-color: #9b59b6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }}
-            a {{ color: #2980b9; text-decoration: none; font-weight: bold; }}
+            
+            /* КРУПНЫЕ БЕЙДЖИ КАТЕГОРИЙ */
+            .badge {{ background-color: #9b59b6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; }}
+            a {{ color: #2980b9; text-decoration: none; font-weight: bold; font-size: 18px; }}
             a:hover {{ text-decoration: underline; }}
+            
             .admin-panel {{ background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 50px; border-top: 4px solid #34495e; }}
             .form-group {{ margin-bottom: 15px; }}
-            label {{ display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }}
-            input[type="text"], select {{ width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }}
-            button {{ background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }}
+            label {{ display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; font-size: 16px; }}
+            input[type="text"], select {{ width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }}
+            button {{ background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }}
             button:hover {{ background-color: #2c3e50; }}
             
-            /* Стили для строки интерактивного поиска */
-            .search-container {{ max-width: 100%; margin: 30px auto 10px auto; position: relative; }}
-            .search-input {{ width: 100%; padding: 14px 20px; border: 2px solid #2ecc71; border-radius: 8px; font-size: 16px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.02); outline: none; transition: border-color 0.3s; }}
+            /* Стили для строки интерактивного поиска и календаря */
+            .search-container {{ max-width: 100%; margin: 20px auto 10px auto; position: relative; }}
+            .search-input {{ width: 100%; padding: 12px 20px; border: 2px solid #2ecc71; border-radius: 8px; font-size: 18px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.02); outline: none; transition: border-color 0.3s; }}
             .search-input:focus {{ border-color: #27ae60; box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2); }}
         </style>
     </head>
@@ -130,10 +140,10 @@ def read_root():
         <div class="container">
             <h1>📅 Сводная афиша мероприятий Калининграда</h1>
             
-                        <!-- СТРОКА ИНТЕРАКТИВНОГО ПОИСКА И КАЛЕНДАРЬ НА ОДНОЙ ЛИНИИ -->
+            <!-- СТРОКА ИНТЕРАКТИВНОГО ПОИСКА И КАЛЕНДАРЬ НА ОДНОЙ ЛИНИИ -->
             <div class="search-container" style="display: flex; gap: 15px;">
                 <input type="text" id="liveSearch" class="search-input" placeholder="🔍 Начните вводить название мероприятия для моментальной фильтрации...">
-                <input type="date" id="dateFilter" class="search-input" style="width: 250px; border-color: #34495e; cursor: pointer;">
+                <input type="date" id="dateFilter" class="search-input" style="width: 280px; border-color: #34495e; cursor: pointer;" title="Выберите конкретную дату для вывода мероприятий">
             </div>
             
             <!-- ЕДИНСТВЕННАЯ ТАБЛИЦА МЕРОПРИЯТИЙ С ИДЕНТИФИКАТОРОМ ДЛЯ СКРИПТА -->
@@ -196,24 +206,23 @@ def read_root():
             
             <!-- НАЧАЛО БЛОКА ОБНОВЛЕННОГО СЧЕТЧИКА LIVEINTERNET (ЛЕВЫЙ КРАЙ) -->
             <div style="text-align: left; margin: 30px 0; padding-left: 15px;">
-                <!--LiveInternet counter-->
-                <a href="https://www.liveinternet.ru/click" target="_blank">
-                    <img id="licntB985" width="88" height="120" style="border:0" 
-                         title="LiveInternet: показано количество просмотров и посетителей"
-                         src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7" alt=""/>
-                </a>
-                <script>
-                    (function(d,s){{
-                        d.getElementById("licntB985").src="https://counter.yadro.ru/hit?t28.12;r"+escape(d.referrer)+
-                        ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
-                        (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
-                        ";h"+escape(d.title.substring(0,150))+";"+Math.random()
-                    }})(document,screen)
-                </script>
-                <!--/LiveInternet-->
+            <!--LiveInternet counter-->
+            <a href="https://www.liveinternet.ru/click" target="_blank">
+                <img id="licntB985" width="88" height="120" style="border:0" 
+                     title="LiveInternet: показано количество просмотров и посетителей"
+                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7" alt=""/>
+            </a>
+            <script>
+                (function(d,s){{
+                    d.getElementById("licntB985").src="https://counter.yadro.ru/hit?t28.12;r"+escape(d.referrer)+
+                    ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                    (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                    ";h"+escape(d.title.substring(0,150))+";"+Math.random()
+                }})(document,screen)
+            </script>
+            <!--/LiveInternet-->
             </div>
             <!-- КОНЕЦ БЛОКА ОБНОВЛЕННОГО СЧЕТЧИКА LIVEINTERNET -->
-
             
             <!-- СКРИПТ КОМПЛЕКСНОЙ ФИЛЬТРАЦИИ ПО ТЕКСТУ И КАЛЕНДАРЮ -->
             <script>
@@ -225,8 +234,11 @@ def read_root():
                     rows.forEach(function(row) {{
                         let cells = row.getElementsByTagName('td');
                         if (cells.length > 0) {{
-                            let titleText = cells[0].textContent || cells[0].innerText;
-                            let detailsText = cells[1].textContent || cells[1].innerText;
+                            let titleCell = cells[0];
+                            let detailsCell = cells[1];
+                            
+                            let titleText = titleCell.textContent || titleCell.innerText;
+                            let detailsText = detailsCell.textContent || detailsCell.innerText;
                             
                             // 1. Проверка текстового поиска по названию
                             let textMatch = titleText.toLowerCase().indexOf(textFilter) > -1;
@@ -234,15 +246,15 @@ def read_root():
                             // 2. Проверка фильтра даты
                             let dateMatch = true;
                             if (dateFilter) {{
-                                // Переводим системную дату ГГГГ-ММ-ДД в русский формат (например: "21 октября")
+                                // Конвертируем дату ГГГГ-ММ-ДД в русскую строку (например: "24 октября")
                                 let options = {{ day: 'numeric', month: 'long' }};
                                 let parsedDate = new Date(dateFilter).toLocaleDateString('ru-RU', options);
                                 
-                                // Проверяем, упоминается ли выбранный день в колонке "Дата / Время / Детали"
+                                // Проверяем вхождение дня в текстовую колонку деталей
                                 dateMatch = detailsText.toLowerCase().indexOf(parsedDate.toLowerCase()) > -1;
                             }}
                             
-                            // Отображаем строку только если совпали и текст, и дата
+                            // Отображаем строку, только если совпали оба фильтра одновременно
                             if (textMatch && dateMatch) {{
                                 row.style.display = '';
                             }} else {{
@@ -252,22 +264,20 @@ def read_root():
                     }});
                 }}
 
-                // Привязываем функцию к обоим инпутам управления
+                // Привязываем функцию комплексного отсева к обоим инпутам управления
                 document.getElementById('liveSearch').addEventListener('keyup', filterTable);
                 document.getElementById('dateFilter').addEventListener('change', filterTable);
             </script>
-            
-            
             
         </div>
     </body>
     </html>
     """
 
-    output_file = Path(__file__).resolve().parent / "index.html"
-    output_file.write_text(html_content, encoding="utf-8")
+        output_file = Path(__file__).resolve().parent / "index.html"
+        output_file.write_text(html_content, encoding="utf-8")
 
-    return HTMLResponse(content=html_content)
+        return HTMLResponse(content=html_content)
 
 
 @app.post("/add-source")
@@ -276,28 +286,32 @@ def add_source(name: str = Form(...), url: str = Form(...), category: str = Form
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     try:
+        # ИСПРАВЛЕНИЕ: Явно передаем is_active = 1, чтобы новый источник сразу вставал в строй
         cursor.execute(
-            "INSERT OR IGNORE INTO sources (name, url, category) VALUES (?, ?, ?)",
+            "INSERT OR IGNORE INTO sources (name, url, category, is_active) VALUES (?, ?, ?, 1)",
             (name, url, category)
         )
         conn.commit()
     except Exception as e:
-        print(f"Ошибка добавления: {e}")
+        print(f"Ошибка добавления источника: {e}")
     finally:
         conn.close()
+
+    # ИСПРАВЛЕНИЕ: Используем статус 303 (See Other) для корректного перенаправления в FastAPI
     return RedirectResponse(url="/", status_code=303)
 
 
 @app.get("/delete-source/{source_id}")
 def delete_source(source_id: int):
-    """ Удаление источника из базы данных """
+    """ Удаление источника из базы данных по его ID """
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     try:
         cursor.execute("DELETE FROM sources WHERE id = ?", (source_id,))
         conn.commit()
     except Exception as e:
-        print(f"Ошибка удаления: {e}")
+        print(f"Ошибка удаления источника: {e}")
     finally:
         conn.close()
+
     return RedirectResponse(url="/", status_code=303)

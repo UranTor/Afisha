@@ -1,31 +1,41 @@
 
-    <!DOCTYPE html>
+ <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
         <title>Афиша Калининграда</title>
         <style>
-            body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background-color: #f4f7f6; color: #333; }
-            h1, h2 { color: #2c3e50; text-align: center; }
-            .container { max-width: 1200px; margin: 0 auto; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; margin-bottom: 50px; }
-            th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
-            th { background-color: #2ecc71; color: white; text-transform: uppercase; font-size: 13px; }
+            /* МАКСИМАЛЬНО УВЕЛИЧЕННЫЙ ШРИФТ ДЛЯ ВЫСОКОЙ ЧИТАЕМОСТИ */
+            body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px 40px; background-color: #f4f7f6; color: #333; font-size: 18px; }
+            h1 { color: #2c3e50; text-align: center; font-size: 32px; }
+            h2 { color: #2c3e50; text-align: center; font-size: 26px; }
+            .container { max-width: 1250px; margin: 0 auto; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; margin-bottom: 25px; }
+            
+            /* КРУПНЫЙ ШРИФТ В ЯЧЕЙКАХ С ЖЕСТКИМ МИНИМАЛЬНЫМ ОТСТУПОМ (padding 5px 12px) */
+            th, td { padding: 5px 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 18px; line-height: 1.4; }
+            
+            /* ЗАГОЛОВКИ КОЛОНОК ТАБЛИЦЫ */
+            th { background-color: #2ecc71; color: white; text-transform: uppercase; font-size: 19px; letter-spacing: 0.5px; }
             .source-th { background-color: #34495e; }
             tr:hover { background-color: #fafafa; }
-            .badge { background-color: #9b59b6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-            a { color: #2980b9; text-decoration: none; font-weight: bold; }
+            
+            /* КРУПНЫЕ БЕЙДЖИ КАТЕГОРИЙ */
+            .badge { background-color: #9b59b6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; }
+            a { color: #2980b9; text-decoration: none; font-weight: bold; font-size: 18px; }
             a:hover { text-decoration: underline; }
+            
             .admin-panel { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 50px; border-top: 4px solid #34495e; }
             .form-group { margin-bottom: 15px; }
-            label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
-            input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-            button { background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+            label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; font-size: 16px; }
+            input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+            button { background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
             button:hover { background-color: #2c3e50; }
             
-            /* Стили для строки интерактивного поиска */
-            .search-container { max-width: 100%; margin: 30px auto 10px auto; position: relative; }
-            .search-input { width: 100%; padding: 14px 20px; border: 2px solid #2ecc71; border-radius: 8px; font-size: 16px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.02); outline: none; transition: border-color 0.3s; }
+            /* Стили для строки интерактивного поиска и календаря */
+            .search-container { max-width: 100%; margin: 20px auto 10px auto; position: relative; }
+            .search-input { width: 100%; padding: 12px 20px; border: 2px solid #2ecc71; border-radius: 8px; font-size: 18px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.02); outline: none; transition: border-color 0.3s; }
             .search-input:focus { border-color: #27ae60; box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2); }
         </style>
     </head>
@@ -33,10 +43,10 @@
         <div class="container">
             <h1>📅 Сводная афиша мероприятий Калининграда</h1>
             
-                        <!-- СТРОКА ИНТЕРАКТИВНОГО ПОИСКА И КАЛЕНДАРЬ НА ОДНОЙ ЛИНИИ -->
+            <!-- СТРОКА ИНТЕРАКТИВНОГО ПОИСКА И КАЛЕНДАРЬ НА ОДНОЙ ЛИНИИ -->
             <div class="search-container" style="display: flex; gap: 15px;">
                 <input type="text" id="liveSearch" class="search-input" placeholder="🔍 Начните вводить название мероприятия для моментальной фильтрации...">
-                <input type="date" id="dateFilter" class="search-input" style="width: 250px; border-color: #34495e; cursor: pointer;">
+                <input type="date" id="dateFilter" class="search-input" style="width: 280px; border-color: #34495e; cursor: pointer;" title="Выберите конкретную дату для вывода мероприятий">
             </div>
             
             <!-- ЕДИНСТВЕННАЯ ТАБЛИЦА МЕРОПРИЯТИЙ С ИДЕНТИФИКАТОРОМ ДЛЯ СКРИПТА -->
@@ -1844,7 +1854,14 @@
         </tr>
         
         <tr>
-            <td>Культурный квартал «Понарт»</td>
+            <td>Точка и линия</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Экскурсии</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Третьяковская галерея. Калининград</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Экскурсии</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
@@ -1879,14 +1896,7 @@
         </tr>
         
         <tr>
-            <td>Точка и линия</td>
-            <td>Уточняйте расписание на Afisha.ru</td>
-            <td><span class="badge">Экскурсии</span></td>
-            <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
-        </tr>
-        
-        <tr>
-            <td>Третьяковская галерея. Калининград</td>
+            <td>Море возможностей</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Экскурсии</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
@@ -1907,14 +1917,7 @@
         </tr>
         
         <tr>
-            <td>Музыкальное лото со стендап-комиком</td>
-            <td>Уточняйте расписание на Afisha.ru</td>
-            <td><span class="badge">Экскурсии</span></td>
-            <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
-        </tr>
-        
-        <tr>
-            <td>Море возможностей</td>
+            <td>Музыкальн ое лото со стендап-комиком</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Экскурсии</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
@@ -1928,21 +1931,7 @@
         </tr>
         
         <tr>
-            <td> Третьяковская галерея. Калининград</td>
-            <td>Уточняйте расписание на Afisha.ru</td>
-            <td><span class="badge">Экскурсии</span></td>
-            <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
-        </tr>
-        
-        <tr>
             <td>Зал Истории Третьяковской галереи</td>
-            <td>Уточняйте расписание на Afisha.ru</td>
-            <td><span class="badge">Экскурсии</span></td>
-            <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
-        </tr>
-        
-        <tr>
-            <td>Fortuna 812. Большой концерт со всеми хитами!</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Экскурсии</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
@@ -1957,6 +1946,13 @@
         
         <tr>
             <td>Музей изобразительных искусств. Новое здание</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Экскурсии</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Fortuna 812. Большой концерт со всеми хитами!</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Экскурсии</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
@@ -1991,6 +1987,13 @@
         </tr>
         
         <tr>
+            <td>Ночные грузчики</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Экскурсии</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/events/exhibitions/concerts/excursions/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
             <td>Кешбэк до 15%</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Дискотеки и праздники</span></td>
@@ -1998,7 +2001,7 @@
         </tr>
         
         <tr>
-            <td>Василий Бейнарович, Фауст 21 века. Как не воспитать серийного убийцу</td>
+            <td>Культурный квартал «Понарт»</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Выставки</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_exhibition/" target="_blank">Перейти</a></td>
@@ -2019,17 +2022,17 @@
         </tr>
         
         <tr>
-            <td>Лекция «В поисках звукоцвета»</td>
+            <td>Василий Бейнарович, Фауст 21 века. Как не воспитать серийного убийцу</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Выставки</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_exhibition/" target="_blank">Перейти</a></td>
         </tr>
         
         <tr>
-            <td>Новогодний концерт при свечах</td>
+            <td>Лекция «В поисках звукоцвета»</td>
             <td>Уточняйте расписание на Afisha.ru</td>
-            <td><span class="badge">Концерты</span></td>
-            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+            <td><span class="badge">Выставки</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_exhibition/" target="_blank">Перейти</a></td>
         </tr>
         
         <tr>
@@ -2041,6 +2044,13 @@
         
         <tr>
             <td>Калининградский театр эстрады</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Новогодний концерт при свечах</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
@@ -2061,14 +2071,14 @@
         </tr>
         
         <tr>
-            <td>Неоклассика при свечах</td>
+            <td>Джаз в городе К.</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
         </tr>
         
         <tr>
-            <td>Джаз в городе К.</td>
+            <td>Неоклассика при свечах</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
@@ -2089,7 +2099,7 @@
         </tr>
         
         <tr>
-            <td>«БеспринцЫпные чтения». Дарья Мороз, Александра Ребенок и Александр Цыпкин со специальной программой «БеспринцЫпный Новый год в Калининграде»</td>
+            <td>«БеспринцЫпные чтения ». Дарья Мороз, Александра Ребенок и Александр Цыпкин со специальной программой «БеспринцЫпный Новый год в Калининграде»</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
@@ -2097,13 +2107,6 @@
         
         <tr>
             <td>Калининградский драматический театр</td>
-            <td>Уточняйте расписание на Afisha.ru</td>
-            <td><span class="badge">Концерты</span></td>
-            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
-        </tr>
-        
-        <tr>
-            <td>Илья Раевский. Сольный стендап-концерт</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
@@ -2124,6 +2127,13 @@
         </tr>
         
         <tr>
+            <td>Илья Раевский. Сольный стендап-концерт</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
             <td>Резиденция королей</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
@@ -2138,13 +2148,6 @@
         </tr>
         
         <tr>
-            <td>Маргарита Родина. Сольный стендап концерт</td>
-            <td>Уточняйте расписание на Afisha.ru</td>
-            <td><span class="badge">Концерты</span></td>
-            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
-        </tr>
-        
-        <tr>
             <td>Комедийное шоу «Слово пацанам»</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
@@ -2152,14 +2155,21 @@
         </tr>
         
         <tr>
-            <td>Черный стендап</td>
+            <td>Маргарита Родина. Сольный стендап концерт</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
         </tr>
         
         <tr>
-            <td>Куин / Queen. Шоу «Богемская рапсодия» в сопровождении симфонического оркестра</td>
+            <td>Симфония Майкла  Джексона при свечах. Оркестр CAGMO</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Алексей Квашонкин. Сольный стендап-концерт</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
@@ -2264,7 +2274,7 @@
         </tr>
         
         <tr>
-            <td>26 октября - 23 октябряПотопВыставка</td>
+            <td>16 июля - 20 декабряТочка и линияВыставка</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Дискотеки и праздники</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/festivals/" target="_blank">Перейти</a></td>
@@ -2376,14 +2386,14 @@
         </tr>
         
         <tr>
-            <td>Как я не стал взрослым</td>
+            <td>Турбулентность</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Дискотеки и праздники</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/festivals/" target="_blank">Перейти</a></td>
         </tr>
         
         <tr>
-            <td>Турбулентность</td>
+            <td>Как я не стал взрослым</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Дискотеки и праздники</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/festivals/" target="_blank">Перейти</a></td>
@@ -2502,6 +2512,13 @@
         </tr>
         
         <tr>
+            <td>Спектакли Город нашей юности 11.12.2026 Калининград, Калининградский областной музыкальный театр</td>
+            <td>Смотрите подробности на visit-kaliningrad.ru</td>
+            <td><span class="badge">Общественные мероприятия</span></td>
+            <td><a href="https://visit-kaliningrad.ru/events/spectacles/Gorod_nashey_yunosti/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
             <td>Выставки Они были первыми 12.06.2026 ‐ 31.12.2026 Куршская коса</td>
             <td>Смотрите подробности на visit-kaliningrad.ru</td>
             <td><span class="badge">Общественные мероприятия</span></td>
@@ -2541,13 +2558,6 @@
             <td>Смотрите подробности на visit-kaliningrad.ru</td>
             <td><span class="badge">Общественные мероприятия</span></td>
             <td><a href="https://visit-kaliningrad.ru/events/kontserty/Kontsert_organnoy_muzyki_ot_Bakha_do_Uilyamsa/" target="_blank">Перейти</a></td>
-        </tr>
-        
-        <tr>
-            <td>Другие мероприятия Шоу стеклодува 06.03.2026 ‐ 31.12.2026 Калининград</td>
-            <td>Смотрите подробности на visit-kaliningrad.ru</td>
-            <td><span class="badge">Общественные мероприятия</span></td>
-            <td><a href="https://visit-kaliningrad.ru/events/drugie_meropriyatiya/SHou_stekloduva/" target="_blank">Перейти</a></td>
         </tr>
         
         <tr>
@@ -2712,7 +2722,7 @@
         </tr>
         
         <tr>
-            <td>Точка и линия. Зал истории Третьяковской галереи. Море возможностей в детском музее</td>
+            <td>Точка и линия. Зал истории Третьяковской галереи…</td>
             <td>Уточняйте расписание на Яндекс Афише</td>
             <td><span class="badge">Выставки</span></td>
             <td><a href="https://afisha.yandex.ru/kaliningrad/art?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu" target="_blank">Перейти</a></td>
@@ -2873,6 +2883,20 @@
         </tr>
         
         <tr>
+            <td>Калининградский ДК желез нодорожников</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Музыкальное лото со стендап-комиком</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
             <td>тринадцать карат</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
@@ -2880,7 +2904,14 @@
         </tr>
         
         <tr>
-            <td>Ночные грузчики</td>
+            <td>Куин / Queen. Шоу «Богемская рапсодия» в сопровождении симфонического оркестра</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Амир Гурбанов. Сольный концерт</td>
             <td>Уточняйте расписание на Afisha.ru</td>
             <td><span class="badge">Концерты</span></td>
             <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
@@ -2894,10 +2925,59 @@
         </tr>
         
         <tr>
-            <td>Точка и линия. Зал истории Третьяковской галереи…</td>
+            <td>Точка и линия. Зал истории Третьяковской галереи. Море возможностей в детском музее</td>
             <td>Уточняйте расписание на Яндекс Афише</td>
             <td><span class="badge">Выставки</span></td>
             <td><a href="https://afisha.yandex.ru/kaliningrad/art?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Черный стендап</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Playingtheangel</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>«БеспринцЫпные чтения». Дарья Мороз, Александра Ребенок и Александр Цыпкин со специальной программой «БеспринцЫпный Новый год в Калининграде»</td>
+            <td>Уточняйте расписание на Afisha.ru</td>
+            <td><span class="badge">Концерты</span></td>
+            <td><a href="https://www.afisha.ru/kaliningrad/schedule_concert/" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Весь Калининград с земли и воды: на автобусе и кораблике</td>
+            <td>Уточняйте расписание на Яндекс Афише</td>
+            <td><span class="badge">Экскурсии</span></td>
+            <td><a href="https://afisha.yandex.ru/kaliningrad/excursions?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Янтарный и Светлогорск + посещение янтарного производства</td>
+            <td>Уточняйте расписание на Яндекс Афише</td>
+            <td><span class="badge">Экскурсии</span></td>
+            <td><a href="https://afisha.yandex.ru/kaliningrad/excursions?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Утренняя Куршская коса, Зеленоградск, Нессельбек и Танцующий лес</td>
+            <td>Уточняйте расписание на Яндекс Афише</td>
+            <td><span class="badge">Экскурсии</span></td>
+            <td><a href="https://afisha.yandex.ru/kaliningrad/excursions?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu" target="_blank">Перейти</a></td>
+        </tr>
+        
+        <tr>
+            <td>Кёнигсберг в Калининграде: северный и южный Амалиенау</td>
+            <td>Уточняйте расписание на Яндекс Афише</td>
+            <td><span class="badge">Экскурсии</span></td>
+            <td><a href="https://afisha.yandex.ru/kaliningrad/excursions?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu" target="_blank">Перейти</a></td>
         </tr>
         
                 </tbody>
@@ -2943,59 +3023,10 @@
                     <tbody>
                         
         <tr>
-            <td>GoKaliningrad</td>
-            <td><code style="font-size:12px;">https://gokaliningrad.com</code></td>
-            <td>Общественное мероприятие</td>
-            <td><a href="/delete-source/1" style="color:#e74c3c;">Удалить</a></td>
-        </tr>
-        
-        <tr>
             <td>Клопс Афиша</td>
             <td><code style="font-size:12px;">https://klops.ru</code></td>
             <td>Концерты и праздники</td>
             <td><a href="/delete-source/2" style="color:#e74c3c;">Удалить</a></td>
-        </tr>
-        
-        <tr>
-            <td>Афиша Калининград</td>
-            <td><code style="font-size:12px;">https://afisha.ru</code></td>
-            <td>Концерты</td>
-            <td><a href="/delete-source/3" style="color:#e74c3c;">Удалить</a></td>
-        </tr>
-        
-        <tr>
-            <td>Афиша 80 лет области</td>
-            <td><code style="font-size:12px;">https://visit-kaliningrad.ru</code></td>
-            <td>Общественные мероприятия</td>
-            <td><a href="/delete-source/4" style="color:#e74c3c;">Удалить</a></td>
-        </tr>
-        
-        <tr>
-            <td>Казино Собрание</td>
-            <td><code style="font-size:12px;">https://sobranie-casino.com</code></td>
-            <td>Дискотеки и праздники</td>
-            <td><a href="/delete-source/5" style="color:#e74c3c;">Удалить</a></td>
-        </tr>
-        
-        <tr>
-            <td>Казино Шамбала</td>
-            <td><code style="font-size:12px;">https://shambala-games.com</code></td>
-            <td>Дискотеки и праздники</td>
-            <td><a href="/delete-source/6" style="color:#e74c3c;">Удалить</a></td>
-        </tr>
-        
-        <tr>
-            <td>Мотодвиж39 (VK)</td>
-            <td><code style="font-size:12px;">https://vk.com</code></td>
-            <td>Мото тусовки</td>
-            <td><a href="/delete-source/7" style="color:#e74c3c;">Удалить</a></td>
-        </tr>
-        
-        <tr>
-            <td>Яндекс Калининград</td>
-            <td><code style="font-size:12px;">https://yandex.ru</code></td>
-            <td>Концерты</td>
-            <td><a href="/delete-source/8" style="color:#e74c3c;">Удалить</a></td>
         </tr>
         
                     </tbody>
@@ -3004,24 +3035,23 @@
             
             <!-- НАЧАЛО БЛОКА ОБНОВЛЕННОГО СЧЕТЧИКА LIVEINTERNET (ЛЕВЫЙ КРАЙ) -->
             <div style="text-align: left; margin: 30px 0; padding-left: 15px;">
-                <!--LiveInternet counter-->
-                <a href="https://www.liveinternet.ru/click" target="_blank">
-                    <img id="licntB985" width="88" height="120" style="border:0" 
-                         title="LiveInternet: показано количество просмотров и посетителей"
-                         src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7" alt=""/>
-                </a>
-                <script>
-                    (function(d,s){
-                        d.getElementById("licntB985").src="https://counter.yadro.ru/hit?t28.12;r"+escape(d.referrer)+
-                        ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
-                        (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
-                        ";h"+escape(d.title.substring(0,150))+";"+Math.random()
-                    })(document,screen)
-                </script>
-                <!--/LiveInternet-->
+            <!--LiveInternet counter-->
+            <a href="https://www.liveinternet.ru/click" target="_blank">
+                <img id="licntB985" width="88" height="120" style="border:0" 
+                     title="LiveInternet: показано количество просмотров и посетителей"
+                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7" alt=""/>
+            </a>
+            <script>
+                (function(d,s){
+                    d.getElementById("licntB985").src="https://counter.yadro.ru/hit?t28.12;r"+escape(d.referrer)+
+                    ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                    (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                    ";h"+escape(d.title.substring(0,150))+";"+Math.random()
+                })(document,screen)
+            </script>
+            <!--/LiveInternet-->
             </div>
             <!-- КОНЕЦ БЛОКА ОБНОВЛЕННОГО СЧЕТЧИКА LIVEINTERNET -->
-
             
             <!-- СКРИПТ КОМПЛЕКСНОЙ ФИЛЬТРАЦИИ ПО ТЕКСТУ И КАЛЕНДАРЮ -->
             <script>
@@ -3033,8 +3063,11 @@
                     rows.forEach(function(row) {
                         let cells = row.getElementsByTagName('td');
                         if (cells.length > 0) {
-                            let titleText = cells[0].textContent || cells[0].innerText;
-                            let detailsText = cells[1].textContent || cells[1].innerText;
+                            let titleCell = cells[0];
+                            let detailsCell = cells[1];
+                            
+                            let titleText = titleCell.textContent || titleCell.innerText;
+                            let detailsText = detailsCell.textContent || detailsCell.innerText;
                             
                             // 1. Проверка текстового поиска по названию
                             let textMatch = titleText.toLowerCase().indexOf(textFilter) > -1;
@@ -3042,15 +3075,15 @@
                             // 2. Проверка фильтра даты
                             let dateMatch = true;
                             if (dateFilter) {
-                                // Переводим системную дату ГГГГ-ММ-ДД в русский формат (например: "21 октября")
+                                // Конвертируем дату ГГГГ-ММ-ДД в русскую строку (например: "24 октября")
                                 let options = { day: 'numeric', month: 'long' };
                                 let parsedDate = new Date(dateFilter).toLocaleDateString('ru-RU', options);
                                 
-                                // Проверяем, упоминается ли выбранный день в колонке "Дата / Время / Детали"
+                                // Проверяем вхождение дня в текстовую колонку деталей
                                 dateMatch = detailsText.toLowerCase().indexOf(parsedDate.toLowerCase()) > -1;
                             }
                             
-                            // Отображаем строку только если совпали и текст, и дата
+                            // Отображаем строку, только если совпали оба фильтра одновременно
                             if (textMatch && dateMatch) {
                                 row.style.display = '';
                             } else {
@@ -3060,12 +3093,10 @@
                     });
                 }
 
-                // Привязываем функцию к обоим инпутам управления
+                // Привязываем функцию комплексного отсева к обоим инпутам управления
                 document.getElementById('liveSearch').addEventListener('keyup', filterTable);
                 document.getElementById('dateFilter').addEventListener('change', filterTable);
             </script>
-            
-            
             
         </div>
     </body>
