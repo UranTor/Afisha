@@ -468,15 +468,63 @@ def parse_klops_afisha():
 
     return unique_events
 
+# ТЕХНИЧЕСКИЙ БЛОК: УМНЫЙ ТРАНСЛЯТОР ДАТ И СОХРАНЕНИЕ В БАЗУ ДАННЫХ
 
+def convert_text_to_iso_date(text):
+    """
+    Умный транслятор дат. Принимает русский текст любой структуры
+    и превращает его в строгий компьютерный формат ISO: '2026-08-17'
+    """
+    text_lower = text.lower().strip()
 
+    # Словарь сопоставления русских названий месяцев с их цифровыми кодами
+    months = {
+        "янв": "01", "фев": "02", "мар": "03", "апр": "04",
+        "май": "05", "мая": "05", "июн": "06", "июл": "07",
+        "авг": "08", "сен": "09", "окт": "10", "ноя": "11", "дек": "12"
+    }
+
+    # В качестве базового года проекта берем текущий 2026 год
+    current_year = 2026
+    # Если точную дату определить нельзя, отправляем событие в конец календаря
+    default_date = f"{current_year}-12-31"
+
+    try:
+        # 1. Определяем код месяца по вхождению подстроки
+        found_month_code = None
+        for month_name, month_code in months.items():
+            if month_name in text_lower:
+                found_month_code = month_code
+                break
+
+        if not found_month_code:
+            return default_date
+
+        # 2. Ищем число месяца (цифру перед названием месяца)
+        words = text_lower.split()
+        day = None
+        for i, word in enumerate(words):
+            if any(m in word for m in months.keys()) and i > 0:
+                potential_day = "".join(filter(str.isdigit, words[i-1]))
+                if potential_day and potential_day.isdigit():
+                    day = int(potential_day)
+                    break
+
+        # 3. Формируем валидную строку ISO
+        if day and 0 < day <= 31:
+            return f"{current_year}-{found_month_code}-{day:02d}"
+
+    except Exception as e:
+        print(f"Ошибка конвертации текста даты '{text}': {e}")
+
+    return default_date
 
 
 def save_events_to_db(events_list):
     """
     Функция записывает чистые события в базу данных SQLite,
     применяя двухуровневую фильтрацию (RegEx + расширенные стоп-слова).
-    Запись идет строго по 4 стандартным колонкам.
+    Запись идет строго по 4 стандартным колонкам + техническое поле iso_date.
     """
     import re
     import sqlite3
@@ -547,12 +595,9 @@ def save_events_to_db(events_list):
         title_lower = title.lower().strip()
 
         # === УРОВЕНЬ ФИЛЬТРАЦИИ 1: РЕГУЛЯРНЫЕ ВЫРАЖЕНИЯ (RegEx) ===
-        # 1.1 Отсекаем динамические города со счетчиками (например, Тула33 события)
         if re.search(r'\d+\s*событ', title_lower) or re.search(r'\d+\s*рестор', title_lower):
             continue
 
-            # 1.2 УМНЫЙ ГЕО-ФИЛЬТР: Отсекаем составные названия городов с дефисами,
-        # уточнениями в скобках или приставками "на-", характерные для сквозного меню
         if re.search(r'\b\w+-\d+\b', title_lower) or \
                 re.search(r'\w+-на-\w+', title_lower) or \
                 re.search(r'\w+\s*\(калуга\)', title_lower) or \
@@ -566,35 +611,32 @@ def save_events_to_db(events_list):
         if any(word in title_lower for word in stop_words):
             continue
 
-        # Фильтр на минимальную длину заголовка мероприятия
         if len(title.strip()) < 10:
             continue
 
+        # ВЫЧИСЛЯЕМ ISO-ДАТУ: Превращаем русский текст в компьютерный формат
+        iso_date = convert_text_to_iso_date(event["date_info"])
+
         try:
-            # Запись строго по 4 стандартным колонкам, БЕЗ iso_date
             cursor.execute('''
-                           INSERT OR IGNORE INTO events (title, date_info, category, source_url)
-                VALUES (?, ?, ?, ?)
-                           ''', (title, event["date_info"], event["category"], event["source"]))
+                           INSERT OR IGNORE INTO events (title, date_info, category, source_url, iso_date)
+                VALUES (?, ?, ?, ?, ?)
+                           ''', (title, event["date_info"], event["category"], event["source"], iso_date))
 
             if cursor.rowcount > 0:
                 saved_count += 1
-                conn.commit()
         except Exception as e:
-            print(f"❌ Ошибка записи события в БД: {e}")
+            print(f"❌ Ошибка записи события: {e}")
 
+    conn.commit()
     conn.close()
     print(f"Фильтрация завершена. В базу данных добавлено чистых событий: {saved_count}")
 
 
 def run_all_parsers():
-    """
-    Главный диспетчер. Он опрашивает базу данных, находит активные источники
-    и автоматически распределяет, какого робота запустить для каждого сайта.
-    """
+    """ Главный диспетчер распределения задач по источникам """
     print("\n=== ЗАПУСК ГЛОБАЛЬНОГО СБОРЩИКА АФИШИ ===")
 
-    # Привязка к абсолютному имени файла для исключения ошибок поиска таблиц
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT name, url FROM sources WHERE is_active = 1")

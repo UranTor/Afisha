@@ -48,8 +48,8 @@ def get_all_events():
     """ Получает события из базы данных по абсолютному пути """
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Сортировка по умолчанию идет по id (новые выше)
-    cursor.execute("SELECT title, date_info, category, source_url FROM events ORDER BY id DESC")
+    # Сортировка от ближайших дат к будущим
+    cursor.execute("SELECT title, date_info, category, source_url FROM events ORDER BY iso_date ASC")
     rows = cursor.fetchall()
     conn.close()
     return rows
@@ -119,13 +119,25 @@ def read_root():
             input[type="text"], select {{ width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }}
             button {{ background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }}
             button:hover {{ background-color: #2c3e50; }}
+            
+            /* Стили для строки интерактивного поиска */
+            .search-container {{ max-width: 100%; margin: 30px auto 10px auto; position: relative; }}
+            .search-input {{ width: 100%; padding: 14px 20px; border: 2px solid #2ecc71; border-radius: 8px; font-size: 16px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.02); outline: none; transition: border-color 0.3s; }}
+            .search-input:focus {{ border-color: #27ae60; box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2); }}
         </style>
     </head>
     <body>
         <div class="container">
             <h1>📅 Сводная афиша мероприятий Калининграда</h1>
             
-            <table>
+                        <!-- СТРОКА ИНТЕРАКТИВНОГО ПОИСКА И КАЛЕНДАРЬ НА ОДНОЙ ЛИНИИ -->
+            <div class="search-container" style="display: flex; gap: 15px;">
+                <input type="text" id="liveSearch" class="search-input" placeholder="🔍 Начните вводить название мероприятия для моментальной фильтрации...">
+                <input type="date" id="dateFilter" class="search-input" style="width: 250px; border-color: #34495e; cursor: pointer;">
+            </div>
+            
+            <!-- ЕДИНСТВЕННАЯ ТАБЛИЦА МЕРОПРИЯТИЙ С ИДЕНТИФИКАТОРОМ ДЛЯ СКРИПТА -->
+            <table id="eventsTable">
                 <thead>
                     <tr>
                         <th>Название мероприятия</th>
@@ -139,6 +151,7 @@ def read_root():
                 </tbody>
             </table>
 
+            <!-- АДМИН-ПАНЕЛЬ ИСТОЧНИКОВ -->
             <div class="admin-panel">
                 <h2>🛠️ Панель управления источниками данных</h2>
                 
@@ -180,8 +193,6 @@ def read_root():
                     </tbody>
                 </table>
             </div>
-                       
-                        # Блок формирования HTML-страницы внутри main.py
             
             <!-- НАЧАЛО БЛОКА ОБНОВЛЕННОГО СЧЕТЧИКА LIVEINTERNET (ЛЕВЫЙ КРАЙ) -->
             <div style="text-align: left; margin: 30px 0; padding-left: 15px;">
@@ -202,6 +213,51 @@ def read_root():
                 <!--/LiveInternet-->
             </div>
             <!-- КОНЕЦ БЛОКА ОБНОВЛЕННОГО СЧЕТЧИКА LIVEINTERNET -->
+
+            
+            <!-- СКРИПТ КОМПЛЕКСНОЙ ФИЛЬТРАЦИИ ПО ТЕКСТУ И КАЛЕНДАРЮ -->
+            <script>
+                function filterTable() {{
+                    let textFilter = document.getElementById('liveSearch').value.toLowerCase();
+                    let dateFilter = document.getElementById('dateFilter').value; // Формат календаря: ГГГГ-ММ-ДД
+                    let rows = document.querySelectorAll('#eventsTable tbody tr');
+                    
+                    rows.forEach(function(row) {{
+                        let cells = row.getElementsByTagName('td');
+                        if (cells.length > 0) {{
+                            let titleText = cells[0].textContent || cells[0].innerText;
+                            let detailsText = cells[1].textContent || cells[1].innerText;
+                            
+                            // 1. Проверка текстового поиска по названию
+                            let textMatch = titleText.toLowerCase().indexOf(textFilter) > -1;
+                            
+                            // 2. Проверка фильтра даты
+                            let dateMatch = true;
+                            if (dateFilter) {{
+                                // Переводим системную дату ГГГГ-ММ-ДД в русский формат (например: "21 октября")
+                                let options = {{ day: 'numeric', month: 'long' }};
+                                let parsedDate = new Date(dateFilter).toLocaleDateString('ru-RU', options);
+                                
+                                // Проверяем, упоминается ли выбранный день в колонке "Дата / Время / Детали"
+                                dateMatch = detailsText.toLowerCase().indexOf(parsedDate.toLowerCase()) > -1;
+                            }}
+                            
+                            // Отображаем строку только если совпали и текст, и дата
+                            if (textMatch && dateMatch) {{
+                                row.style.display = '';
+                            }} else {{
+                                row.style.display = 'none';
+                            }}
+                        }}
+                    }});
+                }}
+
+                // Привязываем функцию к обоим инпутам управления
+                document.getElementById('liveSearch').addEventListener('keyup', filterTable);
+                document.getElementById('dateFilter').addEventListener('change', filterTable);
+            </script>
+            
+            
             
         </div>
     </body>
