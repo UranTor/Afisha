@@ -598,20 +598,20 @@ def save_events_to_db(events_list):
         if re.search(r'\d+\s*событ', title_lower) or re.search(r'\d+\s*рестор', title_lower):
             continue
 
-        if re.search(r'\b\w+-\d+\b', title_lower) or \
-                re.search(r'\w+-на-\w+', title_lower) or \
+        # Убираем опасную блокировку дефисов, оставляем только явную b2b навигацию городов
+        if re.search(r'\w+-на-\w+', title_lower) or \
                 re.search(r'\w+\s*\(калуга\)', title_lower) or \
                 re.search(r'\w+\s*\(курск\)', title_lower) or \
                 re.search(r'\w+\s*\(красноярск\)', title_lower) or \
-                re.search(r'\w+\s*\(пенза\)', title_lower) or \
-                re.search(r'\b(каменск|петропавловск|переславль|ленинск|верхняя)\b', title_lower):
+                re.search(r'\w+\s*\(пенза\)', title_lower):
             continue
 
         # === УРОВЕНЬ ФИЛЬТРАЦИИ 2: РАСШИРЕННЫЕ СТОП-СЛОВА ===
         if any(word in title_lower for word in stop_words):
             continue
 
-        if len(title.strip()) < 10:
+        # Снижаем планку минимальной длины до 2 символов, чтобы не терять "№13", "7Б", "Мот", "Баста"
+        if len(title.strip()) < 2:
             continue
 
         # ВЫЧИСЛЯЕМ ISO-ДАТУ: Превращаем русский текст в компьютерный формат
