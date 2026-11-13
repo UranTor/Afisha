@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
+from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "afisha_database.db")
@@ -55,6 +56,8 @@ def parse_gokaliningrad():
                     "source": target_url
                 }
                 collected_events.append(event_data)
+
+            time.sleep(1)
 
         except Exception as e:
             print(f"Ошибка при парсинге раздела {target_url}: {e}")
@@ -276,7 +279,8 @@ def parse_afisha_kaliningrad():
         "https://www.afisha.ru/kaliningrad/party/": "Дискотеки и праздники",
         "https://www.afisha.ru/kaliningrad/schedule_exhibition/": "Выставки",
         "https://www.afisha.ru/kaliningrad/schedule_concert/": "Концерты",
-        "https://www.afisha.ru/kaliningrad/festivals/": "Дискотеки и праздники" # Категория под Фестивали из вашей структуры select формы
+        "https://www.afisha.ru/kaliningrad/festivals/": "Дискотеки и праздники"
+        # Категория под Фестивали из вашей структуры select формы
     }
 
     print("Парсер Афиши Калининград запущен...")
@@ -298,7 +302,8 @@ def parse_afisha_kaliningrad():
                 # Фильтрация по длине строки для удаления элементов интерфейса
                 if title and len(title) > 12:
                     # Черный список для отсечения служебной навигации afisha.ru
-                    if any(word in title.lower() for word in ["купить", "билеты", "выбрать", "акции", "скидки", "кабинет", "подборки", " daily "]):
+                    if any(word in title.lower() for word in
+                           ["купить", "билеты", "выбрать", "акции", "скидки", "кабинет", "подборки", " daily "]):
                         continue
 
                     clean_title = " ".join(title.split())
@@ -336,9 +341,11 @@ def parse_yandex_kaliningrad():
         "https://afisha.yandex.ru/kaliningrad/concert?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu&multiFilter=2.concert%2C7.non-children": "Концерты",
         "https://afisha.yandex.ru/kaliningrad/festival?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Дискотеки и праздники",
         "https://afisha.yandex.ru/kaliningrad/theatre?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Театр",
-        "https://afisha.yandex.ru/kaliningrad/standup?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Концерты", # Стендап относим к концертам/юмору
+        "https://afisha.yandex.ru/kaliningrad/standup?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Концерты",
+        # Стендап относим к концертам/юмору
         "https://afisha.yandex.ru/kaliningrad/art?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Выставки",
-        "https://afisha.yandex.ru/kaliningrad/show?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Дискотеки и праздники", # Шоу относим к праздникам
+        "https://afisha.yandex.ru/kaliningrad/show?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Дискотеки и праздники",
+        # Шоу относим к праздникам
         "https://afisha.yandex.ru/kaliningrad/excursions?utm_source=ya&utm_medium=main&utm_campaign=main_services&source=menu": "Экскурсии"
     }
 
@@ -347,7 +354,14 @@ def parse_yandex_kaliningrad():
     # Последовательный обход всех 7 разделов
     for target_url, category_name in sections.items():
         try:
-            response = requests.get(target_url, headers=headers, timeout=10)
+            time.sleep(1.5)
+            response = requests.get(target_url, headers=headers, timeout=15)
+
+            # Если сервер Яндекса временно ответил сбоем (500 или 429), ждем 3 секунды и пробуем еще раз
+            if response.status_code != 200:
+                time.sleep(3)
+                response = requests.get(target_url, headers=headers, timeout=15)
+
             if response.status_code != 200:
                 print(f"Ошибка загрузки раздела Яндекса {category_name}: {response.status_code}")
                 continue
@@ -404,7 +418,8 @@ def parse_klops_afisha():
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
     possible_chrome_paths = [
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -468,51 +483,46 @@ def parse_klops_afisha():
 
     return unique_events
 
+
 # ТЕХНИЧЕСКИЙ БЛОК: УМНЫЙ ТРАНСЛЯТОР ДАТ И СОХРАНЕНИЕ В БАЗУ ДАННЫХ
 
 def convert_text_to_iso_date(text):
     """
-    Умный транслятор дат. Принимает русский текст любой структуры
-    и превращает его в строгий компьютерный формат ISO: '2026-08-17'
+    Умный транслятор дат. Находит дату в любом формате ('21 октября', '13.11.2026')
+    и превращает её в формат ISO: '2026-10-21'.
     """
+    import re
     text_lower = text.lower().strip()
 
-    # Словарь сопоставления русских названий месяцев с их цифровыми кодами
     months = {
         "янв": "01", "фев": "02", "мар": "03", "апр": "04",
         "май": "05", "мая": "05", "июн": "06", "июл": "07",
         "авг": "08", "сен": "09", "окт": "10", "ноя": "11", "дек": "12"
     }
 
-    # В качестве базового года проекта берем текущий 2026 год
-    current_year = 2026
-    # Если точную дату определить нельзя, отправляем событие в конец календаря
+    current_year = datetime.now().year
     default_date = f"{current_year}-12-31"
 
     try:
-        # 1. Определяем код месяца по вхождению подстроки
-        found_month_code = None
+        # 1. Ищем формат с точками (например: 13.11.2026 или 13.11)
+        dot_match = re.search(r'(\d{1,2})\.(\d{2})(?:\.(\d{4}))?', text_lower)
+        if dot_match:
+            day = int(dot_match.group(1))
+            month = int(dot_match.group(2))
+            year = int(dot_match.group(3)) if dot_match.group(3) else current_year
+            if 0 < day <= 31 and 0 < month <= 12:
+                return f"{year}-{month:02d}-{day:02d}"
+
+        # 2. Ищем число + название месяца (например: "21 октября" или "5 фев")
+        current_month = datetime.now().month
         for month_name, month_code in months.items():
-            if month_name in text_lower:
-                found_month_code = month_code
-                break
-
-        if not found_month_code:
-            return default_date
-
-        # 2. Ищем число месяца (цифру перед названием месяца)
-        words = text_lower.split()
-        day = None
-        for i, word in enumerate(words):
-            if any(m in word for m in months.keys()) and i > 0:
-                potential_day = "".join(filter(str.isdigit, words[i-1]))
-                if potential_day and potential_day.isdigit():
-                    day = int(potential_day)
-                    break
-
-        # 3. Формируем валидную строку ISO
-        if day and 0 < day <= 31:
-            return f"{current_year}-{found_month_code}-{day:02d}"
+            match = re.search(r'(\d{1,2})\s*' + month_name, text_lower)
+            if match:
+                day = int(match.group(1))
+                if 0 < day <= 31:
+                    # Если сейчас конец года (ноябрь-декабрь), а событие в январе-июне — ставим следующий год
+                    event_year = current_year + 1 if (current_month >= 11 and int(month_code) <= 6) else current_year
+                    return f"{event_year}-{month_code}-{day:02d}"
 
     except Exception as e:
         print(f"Ошибка конвертации текста даты '{text}': {e}")
@@ -598,7 +608,7 @@ def save_events_to_db(events_list):
         if re.search(r'\d+\s*событ', title_lower) or re.search(r'\d+\s*рестор', title_lower):
             continue
 
-        # Убираем опасную блокировку дефисов, оставляем только явную b2b навигацию городов
+        # Убираем блокировку дефисов, оставляем только явную b2b навигацию городов
         if re.search(r'\w+-на-\w+', title_lower) or \
                 re.search(r'\w+\s*\(калуга\)', title_lower) or \
                 re.search(r'\w+\s*\(курск\)', title_lower) or \
@@ -614,12 +624,23 @@ def save_events_to_db(events_list):
         if len(title.strip()) < 2:
             continue
 
-        # ВЫЧИСЛЯЕМ ISO-ДАТУ: Превращаем русский текст в компьютерный формат
-        iso_date = convert_text_to_iso_date(event["date_info"])
+        # ВЫЧИСЛЯЕМ ISO-ДАТУ (ищем дату и в названии, и в деталях) И БЕРЕМ СЕГОДНЯШНЮЮ ДАТУ КОМПЬЮТЕРА
+        iso_date = convert_text_to_iso_date(f"{title} {event['date_info']}")
+        today_iso = datetime.now().strftime("%Y-%m-%d")
+
+        # ЗАЩИТА 1: Если дата мероприятия уже прошла (меньше сегодняшней) — пропускаем
+        if iso_date < today_iso:
+            continue
 
         try:
+            # ЗАЩИТА 2: Проверяем дубликат по названию, даже если сайты-источники разные
+            cursor.execute("SELECT id FROM events WHERE LOWER(title) = ?", (title_lower,))
+            if cursor.fetchone():
+                continue
+
             cursor.execute('''
-                           INSERT OR IGNORE INTO events (title, date_info, category, source_url, iso_date)
+                           INSERT
+                           OR IGNORE INTO events (title, date_info, category, source_url, iso_date)
                 VALUES (?, ?, ?, ?, ?)
                            ''', (title, event["date_info"], event["category"], event["source"], iso_date))
 
@@ -633,9 +654,35 @@ def save_events_to_db(events_list):
     print(f"Фильтрация завершена. В базу данных добавлено чистых событий: {saved_count}")
 
 
+def clean_past_events():
+    """ Удаляет из базы данных все прошедшие мероприятия """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    # Узнаем сегодняшнюю дату (например, '2026-11-11')
+    today_iso = datetime.now().strftime("%Y-%m-%d")
+
+    try:
+        # Удаляем записи, дата которых меньше сегодняшней
+        cursor.execute("DELETE FROM events WHERE iso_date < ?", (today_iso,))
+        deleted_count = cursor.rowcount
+        conn.commit()
+
+        # Сжимаем файл базы данных, чтобы освободить место
+        if deleted_count > 0:
+            cursor.execute("VACUUM")
+
+        print(f"🧹 Очистка базы: удалено устаревших событий — {deleted_count}")
+    except Exception as e:
+        print(f"❌ Ошибка при очистке старых событий: {e}")
+    finally:
+        conn.close()
+
+
 def run_all_parsers():
     """ Главный диспетчер распределения задач по источникам """
     print("\n=== ЗАПУСК ГЛОБАЛЬНОГО СБОРЩИКА АФИШИ ===")
+    clean_past_events()
 
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -651,7 +698,9 @@ def run_all_parsers():
         results = []
 
         if "gokaliningrad.com" in url:
-            results = parse_gokaliningrad()
+            print("GoKaliningrad in pause")
+            continue
+            # results = parse_gokaliningrad()
         elif "afisha.ru" in url:
             results = parse_afisha_kaliningrad()
         elif "yandex.ru" in url:

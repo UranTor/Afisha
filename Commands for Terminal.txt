@@ -1,0 +1,23 @@
+запуск глобальный сборщик в Terminal: python scraper.py
+Если Windows выдаст ошибку безопасности Execution Policy, введите сначала команду Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process,
+ а затем повторите активацию).Если в терминале написано C:\... (Обычная командная строка CMD): cmd
+.venv\Scripts\activate.bat
+После нажатия Enter в начале строки обязательно появится заветный маркер (.venv).
+
+Способ 2. Чтобы терминал всегда открывался с правильным окружением сам:
+В правом нижнем углу окна среды разработки найдите надпись с версией Python (например, Python 3.10).
+Кликните по ней.В выпадающем меню выберите Afisha\.venv (или пункт, где в пути есть слово .venv).
+Критически важно: Закройте текущую вкладку Терминала, нажав на крестик (x) рядом со словом Terminal, и откройте его заново (комбинацией клавиш Alt + F12). 
+Новый терминал автоматически подхватит выбранное окружение.
+
+Команда python -m uvicorn main:app --reload для запуска сайта.
+
+Создание текстового файла с кодом всех файлов для загрузки в ИИ:
+(.venv) PS C:\Users\user705\Downloads\Kotlin Project\Afisha>
+Get-ChildItem -Recurse -Filter *.py | Where-Object { $_.FullName -notmatch '\\\.venv\\' } | ForEach-Object { "`n# === : $($_.FullName) ===`n"; Get-Content $_.FullName } | Set-Content project_code.txt -Encoding UTF8
+
+Полное удаление старого файла базы данных:  Remove-Item afisha_database.db
+
+Создание чистой базы и загрузка источников: python database.py
+
+

@@ -45,11 +45,12 @@ app = FastAPI(title="Афиша Калининграда", lifespan=lifespan)
 
 
 def get_all_events():
-    """ Получает события из базы данных по абсолютному пути """
+    """ Получает только актуальные (не прошедшие) события из базы данных """
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Сортировка от ближайших дат к будущим
-    cursor.execute("SELECT title, date_info, category, source_url FROM events ORDER BY iso_date ASC")
+    # Показываем события начиная с сегодняшнего дня и сортируем от ближайших к будущим
+    cursor.execute(
+        "SELECT title, date_info, category, source_url FROM events WHERE iso_date >= date('now', 'localtime') ORDER BY iso_date ASC")
     rows = cursor.fetchall()
     conn.close()
     return rows
@@ -94,7 +95,7 @@ def read_root():
         </tr>
         """
 
-    # Формирование HTML-страницы
+        # Формирование HTML-страницы
         html_content = f"""
  <!DOCTYPE html>
     <html>
@@ -228,33 +229,31 @@ def read_root():
             <script>
                 function filterTable() {{
                     let textFilter = document.getElementById('liveSearch').value.toLowerCase();
-                    let dateFilter = document.getElementById('dateFilter').value; // Формат календаря: ГГГГ-ММ-ДД
+                    let dateFilter = document.getElementById('dateFilter').value;
                     let rows = document.querySelectorAll('#eventsTable tbody tr');
                     
                     rows.forEach(function(row) {{
                         let cells = row.getElementsByTagName('td');
                         if (cells.length > 0) {{
-                            let titleCell = cells[0];
-                            let detailsCell = cells[1];
-                            
-                            let titleText = titleCell.textContent || titleCell.innerText;
-                            let detailsText = detailsCell.textContent || detailsCell.innerText;
+                            let titleText = cells[0].textContent || cells[0].innerText;
+                            let detailsText = cells[1].textContent || cells[1].innerText;
                             
                             // 1. Проверка текстового поиска по названию
                             let textMatch = titleText.toLowerCase().indexOf(textFilter) > -1;
                             
-                            // 2. Проверка фильтра даты
+                            // 2. Проверка фильтра даты (ищем и в названии, и в деталях)
                             let dateMatch = true;
                             if (dateFilter) {{
-                                // Конвертируем дату ГГГГ-ММ-ДД в русскую строку (например: "24 октября")
-                                let options = {{ day: 'numeric', month: 'long' }};
-                                let parsedDate = new Date(dateFilter).toLocaleDateString('ru-RU', options);
-                                
-                                // Проверяем вхождение дня в текстовую колонку деталей
-                                dateMatch = detailsText.toLowerCase().indexOf(parsedDate.toLowerCase()) > -1;
+                                let parts = dateFilter.split('-');
+                                let dayNum = parseInt(parts[2], 10);
+                                let monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+                                let parsedTextDate = dayNum + ' ' + monthNames[parseInt(parts[1], 10) - 1];
+                                let parsedDotDate = parts[2] + '.' + parts[1];
+
+                                let fullRowText = (titleText + ' ' + detailsText).toLowerCase();
+                                dateMatch = (fullRowText.indexOf(parsedTextDate) > -1) || (fullRowText.indexOf(parsedDotDate) > -1);
                             }}
                             
-                            // Отображаем строку, только если совпали оба фильтра одновременно
                             if (textMatch && dateMatch) {{
                                 row.style.display = '';
                             }} else {{
@@ -264,11 +263,9 @@ def read_root():
                     }});
                 }}
 
-                // Привязываем функцию комплексного отсева к обоим инпутам управления
                 document.getElementById('liveSearch').addEventListener('keyup', filterTable);
                 document.getElementById('dateFilter').addEventListener('change', filterTable);
             </script>
-            
         </div>
     </body>
     </html>
