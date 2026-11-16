@@ -325,6 +325,12 @@ def read_root():
             </script>
         </div>
         
+        
+        
+        
+        
+        
+        
         <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS С АВТОВОЗВРАТОМ) -->
         <button class="feedback-float-btn" onclick="openFeedbackModal()">✉️ Написать нам</button>
 
@@ -385,6 +391,11 @@ def read_root():
                 window.history.replaceState({{}}, document.title, window.location.pathname);
             }}
         </script>
+
+
+
+
+
 
         
     </body>
