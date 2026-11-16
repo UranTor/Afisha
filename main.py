@@ -325,7 +325,7 @@ def read_root():
             </script>
         </div>
         
-                <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS) -->
+        <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS) -->
         <button class="feedback-float-btn" onclick="openFeedbackModal()">✉️ Написать нам</button>
 
         <div id="feedbackModal" class="feedback-modal">
@@ -362,10 +362,10 @@ def read_root():
 
             function closeFeedbackModal() {{
                 document.getElementById('feedbackModal').style.display = 'none';
-                document.getElementById('feedbackStatus').textContent = '';
+                let status = document.getElementById('feedbackStatus');
+                if (status) status.textContent = '';
             }}
 
-            // Закрытие при клике мимо окна
             window.addEventListener('click', function(event) {{
                 let modal = document.getElementById('feedbackModal');
                 if (event.target === modal) {{
@@ -373,8 +373,7 @@ def read_root():
                 }}
             }});
 
-            // Фоновая отправка формы через Web3Forms без перезагрузки страницы
-            document.getElementById('web3FeedbackForm').addEventListener('submit', function(e) {{
+            document.getElementById('web3FeedbackForm').addEventListener('submit', async function(e) {{
                 e.preventDefault();
                 let form = e.target;
                 let btn = document.getElementById('feedbackSubmitBtn');
@@ -383,42 +382,39 @@ def read_root():
                 btn.disabled = true;
                 btn.textContent = '⏳ Отправка...';
                 status.style.color = '#2c3e50';
-                status.textContent = 'Отправляем ваше сообщение...';
+                status.textContent = 'Отправляем сообщение...';
 
                 let formData = new FormData(form);
-                let object = Object.fromEntries(formData);
-                let json = JSON.stringify(object);
+                if (!formData.get('email') || formData.get('email').trim() === '') {{
+                    formData.delete('email');
+                }}
 
-                fetch('https://web3forms.com', {{
-                    method: 'POST',
-                    headers: {{
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }},
-                    body: json
-                }})
-                .then(async (response) => {{
-                    let json = await response.json();
-                    if (response.status == 200) {{
+                try {{
+                    let response = await fetch('https://web3forms.com', {{
+                        method: 'POST',
+                        body: formData
+                    }});
+                    let data = await response.json();
+
+                    if (data.success) {{
                         status.style.color = '#27ae60';
-                        status.textContent = '✅ Сообщение успешно отправлено!';
+                        status.textContent = '✅ Сообщение отправлено!';
                         form.reset();
-                        setTimeout(closeFeedbackModal, 2000);
+                        setTimeout(closeFeedbackModal, 1200);
                     }} else {{
                         status.style.color = '#e74c3c';
-                        status.textContent = '❌ Ошибка отправки: ' + json.message;
+                        status.textContent = '❌ Ошибка: ' + (data.message || 'Не удалось отправить');
                     }}
-                }})
-                .catch(error => {{
+                }} catch (error) {{
                     status.style.color = '#e74c3c';
-                    status.textContent = '❌ Ошибка сети. Попробуйте позже.';
-                }})
-                .finally(function() {{
+                    status.textContent = '❌ Ошибка сети. Проверьте интернет или блокировщик рекламы.';
+                }} finally {{
                     btn.disabled = false;
                     btn.textContent = '📨 Отправить сообщение';
-                }});
+                }}
             }});
         </script>
+
         
     </body>
     </html>
