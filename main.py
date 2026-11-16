@@ -331,7 +331,7 @@ def read_root():
         
         
         
-        <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS С АВТОВОЗВРАТОМ) -->
+        <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS) -->
         <button class="feedback-float-btn" onclick="openFeedbackModal()">✉️ Написать нам</button>
 
         <div id="feedbackModal" class="feedback-modal">
@@ -341,7 +341,6 @@ def read_root():
                 <form action="https://web3forms.com" method="POST" onsubmit="prepareFeedbackForm()">
                     <input type="hidden" name="access_key" value="6bc26ce1-4240-4d61-83de-8e80071722a7">
                     <input type="hidden" name="subject" value="Новое сообщение с сайта Афиша Калининграда">
-                    <!-- Автоматический возврат на ваш сайт сразу после отправки -->
                     <input type="hidden" name="redirect" value="https://github.io">
                     <input type="checkbox" name="botcheck" style="display: none;">
 
@@ -385,12 +384,12 @@ def read_root():
                 }}
             }}
 
-            // Показываем уведомление об успешной отправке при возврате на сайт
             if (window.location.search.indexOf('sent=1') > -1) {{
                 alert('✅ Спасибо! Ваше сообщение успешно отправлено.');
                 window.history.replaceState({{}}, document.title, window.location.pathname);
             }}
         </script>
+
 
 
 
