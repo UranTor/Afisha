@@ -135,6 +135,63 @@ def read_root():
             .search-container {{ max-width: 100%; margin: 20px auto 10px auto; position: relative; }}
             .search-input {{ width: 100%; padding: 12px 20px; border: 2px solid #2ecc71; border-radius: 8px; font-size: 18px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.02); outline: none; transition: border-color 0.3s; }}
             .search-input:focus {{ border-color: #27ae60; box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2); }}
+            
+                        /* Стили для плавающей кнопки и окна обратной связи */
+            .feedback-float-btn {{
+                position: fixed;
+                bottom: 25px;
+                right: 25px;
+                background-color: #3498db;
+                color: #ffffff;
+                border: none;
+                border-radius: 50px;
+                padding: 14px 24px;
+                font-size: 16px;
+                font-weight: bold;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+                cursor: pointer;
+                z-index: 1000;
+                transition: transform 0.2s, background-color 0.2s;
+            }}
+            .feedback-float-btn:hover {{
+                background-color: #2980b9;
+                transform: translateY(-2px);
+            }}
+            .feedback-modal {{
+                display: none;
+                position: fixed;
+                z-index: 1001;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(44, 62, 80, 0.65);
+                align-items: center;
+                justify-content: center;
+            }}
+            .feedback-modal-content {{
+                background-color: #ffffff;
+                padding: 25px;
+                border-radius: 8px;
+                border-top: 5px solid #3498db;
+                width: 90%;
+                max-width: 440px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                position: relative;
+            }}
+            .feedback-close {{
+                position: absolute;
+                top: 12px;
+                right: 16px;
+                font-size: 24px;
+                font-weight: bold;
+                color: #7f8c8d;
+                cursor: pointer;
+            }}
+            .feedback-close:hover {{
+                color: #2c3e50;
+            }}
+            
         </style>
     </head>
     <body>
@@ -267,6 +324,102 @@ def read_root():
                 document.getElementById('dateFilter').addEventListener('change', filterTable);
             </script>
         </div>
+        
+                <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS) -->
+        <button class="feedback-float-btn" onclick="openFeedbackModal()">✉️ Написать нам</button>
+
+        <div id="feedbackModal" class="feedback-modal">
+            <div class="feedback-modal-content">
+                <span class="feedback-close" onclick="closeFeedbackModal()">&times;</span>
+                <h2 style="margin-top: 0; color: #2c3e50;">✉️ Обратная связь</h2>
+                <form id="web3FeedbackForm">
+                    <input type="hidden" name="access_key" value="6bc26ce1-4240-4d61-83de-8e80071722a7">
+                    <input type="hidden" name="subject" value="Новое сообщение с сайта Афиша Калининграда">
+                    <input type="checkbox" name="botcheck" style="display: none;">
+
+                    <div class="form-group">
+                        <label>Ваше имя *</label>
+                        <input type="text" name="name" placeholder="Как к вам обращаться?" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ваш Email (необязательно)</label>
+                        <input type="email" name="email" placeholder="Для обратной связи, если нужен ответ">
+                    </div>
+                    <div class="form-group">
+                        <label>Сообщение *</label>
+                        <textarea name="message" rows="4" placeholder="Напишите вопрос, отзыв или предложите мероприятие..." required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+                    <button type="submit" id="feedbackSubmitBtn" style="width: 100%; background-color: #3498db;">📨 Отправить сообщение</button>
+                    <p id="feedbackStatus" style="margin-top: 12px; font-weight: bold; text-align: center;"></p>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            function openFeedbackModal() {{
+                document.getElementById('feedbackModal').style.display = 'flex';
+            }}
+
+            function closeFeedbackModal() {{
+                document.getElementById('feedbackModal').style.display = 'none';
+                document.getElementById('feedbackStatus').textContent = '';
+            }}
+
+            // Закрытие при клике мимо окна
+            window.addEventListener('click', function(event) {{
+                let modal = document.getElementById('feedbackModal');
+                if (event.target === modal) {{
+                    closeFeedbackModal();
+                }}
+            }});
+
+            // Фоновая отправка формы через Web3Forms без перезагрузки страницы
+            document.getElementById('web3FeedbackForm').addEventListener('submit', function(e) {{
+                e.preventDefault();
+                let form = e.target;
+                let btn = document.getElementById('feedbackSubmitBtn');
+                let status = document.getElementById('feedbackStatus');
+
+                btn.disabled = true;
+                btn.textContent = '⏳ Отправка...';
+                status.style.color = '#2c3e50';
+                status.textContent = 'Отправляем ваше сообщение...';
+
+                let formData = new FormData(form);
+                let object = Object.fromEntries(formData);
+                let json = JSON.stringify(object);
+
+                fetch('https://web3forms.com', {{
+                    method: 'POST',
+                    headers: {{
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }},
+                    body: json
+                }})
+                .then(async (response) => {{
+                    let json = await response.json();
+                    if (response.status == 200) {{
+                        status.style.color = '#27ae60';
+                        status.textContent = '✅ Сообщение успешно отправлено!';
+                        form.reset();
+                        setTimeout(closeFeedbackModal, 2000);
+                    }} else {{
+                        status.style.color = '#e74c3c';
+                        status.textContent = '❌ Ошибка отправки: ' + json.message;
+                    }}
+                }})
+                .catch(error => {{
+                    status.style.color = '#e74c3c';
+                    status.textContent = '❌ Ошибка сети. Попробуйте позже.';
+                }})
+                .finally(function() {{
+                    btn.disabled = false;
+                    btn.textContent = '📨 Отправить сообщение';
+                }});
+            }});
+        </script>
+        
     </body>
     </html>
     """
