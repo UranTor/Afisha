@@ -398,7 +398,7 @@ def read_root():
                 let json = JSON.stringify(object);
 
                 try {{
-                    let response = await fetch('https://web3forms.com', {{
+                    let response = await fetch('https://api.web3forms.com/submit', {{
                         method: 'POST',
                         headers: {{
                             'Content-Type': 'application/json',
