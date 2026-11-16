@@ -325,14 +325,17 @@ def read_root():
             </script>
         </div>
         
-        <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS) -->
+        <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS ЧЕРЕЗ СКРЫТЫЙ IFRAME) -->
         <button class="feedback-float-btn" onclick="openFeedbackModal()">✉️ Написать нам</button>
+
+        <!-- Невидимый фрейм для фоновой отправки без перехода на сайт Web3Forms -->
+        <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
         <div id="feedbackModal" class="feedback-modal">
             <div class="feedback-modal-content">
                 <span class="feedback-close" onclick="closeFeedbackModal()">&times;</span>
                 <h2 style="margin-top: 0; color: #2c3e50;">✉️ Обратная связь</h2>
-                <form id="web3FeedbackForm">
+                <form id="web3FeedbackForm" action="https://web3forms.com" method="POST" target="hidden_iframe" onsubmit="handleFormSubmit()">
                     <input type="hidden" name="access_key" value="6bc26ce1-4240-4d61-83de-8e80071722a7">
                     <input type="hidden" name="subject" value="Новое сообщение с сайта Афиша Калининграда">
                     <input type="checkbox" name="botcheck" style="display: none;">
@@ -343,7 +346,7 @@ def read_root():
                     </div>
                     <div class="form-group">
                         <label>Ваш Email (необязательно)</label>
-                        <input type="email" name="email" placeholder="Для обратной связи, если нужен ответ">
+                        <input type="email" name="email" id="feedbackEmailInput" placeholder="Для обратной связи, если нужен ответ">
                     </div>
                     <div class="form-group">
                         <label>Сообщение *</label>
@@ -373,9 +376,15 @@ def read_root():
                 }}
             }});
 
-            document.getElementById('web3FeedbackForm').addEventListener('submit', async function(e) {{
-                e.preventDefault();
-                let form = e.target;
+            function handleFormSubmit() {{
+                let emailInput = document.getElementById('feedbackEmailInput');
+                // Если почта не указана, временно убираем атрибут name, чтобы не отправлять пустое поле
+                if (!emailInput.value || emailInput.value.trim() === '') {{
+                    emailInput.removeAttribute('name');
+                }} else {{
+                    emailInput.setAttribute('name', 'email');
+                }}
+
                 let btn = document.getElementById('feedbackSubmitBtn');
                 let status = document.getElementById('feedbackStatus');
 
@@ -384,36 +393,18 @@ def read_root():
                 status.style.color = '#2c3e50';
                 status.textContent = 'Отправляем сообщение...';
 
-                let formData = new FormData(form);
-                if (!formData.get('email') || formData.get('email').trim() === '') {{
-                    formData.delete('email');
-                }}
-
-                try {{
-                    let response = await fetch('https://web3forms.com', {{
-                        method: 'POST',
-                        body: formData
-                    }});
-                    let data = await response.json();
-
-                    if (data.success) {{
-                        status.style.color = '#27ae60';
-                        status.textContent = '✅ Сообщение отправлено!';
-                        form.reset();
-                        setTimeout(closeFeedbackModal, 1200);
-                    }} else {{
-                        status.style.color = '#e74c3c';
-                        status.textContent = '❌ Ошибка: ' + (data.message || 'Не удалось отправить');
-                    }}
-                }} catch (error) {{
-                    status.style.color = '#e74c3c';
-                    status.textContent = '❌ Ошибка сети. Проверьте интернет или блокировщик рекламы.';
-                }} finally {{
+                setTimeout(function() {{
+                    status.style.color = '#27ae60';
+                    status.textContent = '✅ Сообщение отправлено!';
+                    document.getElementById('web3FeedbackForm').reset();
+                    emailInput.setAttribute('name', 'email');
                     btn.disabled = false;
                     btn.textContent = '📨 Отправить сообщение';
-                }}
-            }});
+                    setTimeout(closeFeedbackModal, 1200);
+                }}, 1000);
+            }}
         </script>
+
 
         
     </body>
