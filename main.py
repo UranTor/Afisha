@@ -325,19 +325,18 @@ def read_root():
             </script>
         </div>
         
-        <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS ЧЕРЕЗ СКРЫТЫЙ IFRAME) -->
+        <!-- ПЛАВАЮЩАЯ КНОПКА И ОКНО ОБРАТНОЙ СВЯЗИ (WEB3FORMS С АВТОВОЗВРАТОМ) -->
         <button class="feedback-float-btn" onclick="openFeedbackModal()">✉️ Написать нам</button>
-
-        <!-- Невидимый фрейм для фоновой отправки без перехода на сайт Web3Forms -->
-        <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
         <div id="feedbackModal" class="feedback-modal">
             <div class="feedback-modal-content">
                 <span class="feedback-close" onclick="closeFeedbackModal()">&times;</span>
                 <h2 style="margin-top: 0; color: #2c3e50;">✉️ Обратная связь</h2>
-                <form id="web3FeedbackForm" action="https://web3forms.com" method="POST" target="hidden_iframe" onsubmit="handleFormSubmit()">
+                <form action="https://web3forms.com" method="POST" onsubmit="prepareFeedbackForm()">
                     <input type="hidden" name="access_key" value="6bc26ce1-4240-4d61-83de-8e80071722a7">
                     <input type="hidden" name="subject" value="Новое сообщение с сайта Афиша Калининграда">
+                    <!-- Автоматический возврат на ваш сайт сразу после отправки -->
+                    <input type="hidden" name="redirect" value="https://github.io">
                     <input type="checkbox" name="botcheck" style="display: none;">
 
                     <div class="form-group">
@@ -352,8 +351,7 @@ def read_root():
                         <label>Сообщение *</label>
                         <textarea name="message" rows="4" placeholder="Напишите вопрос, отзыв или предложите мероприятие..." required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; font-family: inherit; resize: vertical;"></textarea>
                     </div>
-                    <button type="submit" id="feedbackSubmitBtn" style="width: 100%; background-color: #3498db;">📨 Отправить сообщение</button>
-                    <p id="feedbackStatus" style="margin-top: 12px; font-weight: bold; text-align: center;"></p>
+                    <button type="submit" style="width: 100%; background-color: #3498db;">📨 Отправить сообщение</button>
                 </form>
             </div>
         </div>
@@ -365,8 +363,6 @@ def read_root():
 
             function closeFeedbackModal() {{
                 document.getElementById('feedbackModal').style.display = 'none';
-                let status = document.getElementById('feedbackStatus');
-                if (status) status.textContent = '';
             }}
 
             window.addEventListener('click', function(event) {{
@@ -376,35 +372,19 @@ def read_root():
                 }}
             }});
 
-            function handleFormSubmit() {{
+            function prepareFeedbackForm() {{
                 let emailInput = document.getElementById('feedbackEmailInput');
-                // Если почта не указана, временно убираем атрибут name, чтобы не отправлять пустое поле
                 if (!emailInput.value || emailInput.value.trim() === '') {{
                     emailInput.removeAttribute('name');
-                }} else {{
-                    emailInput.setAttribute('name', 'email');
                 }}
+            }}
 
-                let btn = document.getElementById('feedbackSubmitBtn');
-                let status = document.getElementById('feedbackStatus');
-
-                btn.disabled = true;
-                btn.textContent = '⏳ Отправка...';
-                status.style.color = '#2c3e50';
-                status.textContent = 'Отправляем сообщение...';
-
-                setTimeout(function() {{
-                    status.style.color = '#27ae60';
-                    status.textContent = '✅ Сообщение отправлено!';
-                    document.getElementById('web3FeedbackForm').reset();
-                    emailInput.setAttribute('name', 'email');
-                    btn.disabled = false;
-                    btn.textContent = '📨 Отправить сообщение';
-                    setTimeout(closeFeedbackModal, 1200);
-                }}, 1000);
+            // Показываем уведомление об успешной отправке при возврате на сайт
+            if (window.location.search.indexOf('sent=1') > -1) {{
+                alert('✅ Спасибо! Ваше сообщение успешно отправлено.');
+                window.history.replaceState({{}}, document.title, window.location.pathname);
             }}
         </script>
-
 
         
     </body>
